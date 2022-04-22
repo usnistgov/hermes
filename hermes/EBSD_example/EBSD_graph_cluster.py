@@ -18,7 +18,7 @@ from orix.quaternion.symmetry import Oh
 
 ''' Function to convert the hard clustering into a probabilitic clustering
 '''
-def get_local_membership_prob(Graph, clusters):
+def get_local_membership_prob(Graph, clusters, scale):
   '''Given the graph of measurements, and the initial clustering,
      get the probabilites of the cluster membership 
      (using the graph connectivity)'''
@@ -60,8 +60,8 @@ def get_local_membership_prob(Graph, clusters):
   mean = np.nanmean(average_distance_matrix)
   #Similarity of each node to each cluster
   # similarity_matrix = np.exp(-(average_distance_matrix/mean)**2)
-  similarity_matrix = np.exp(-(average_distance_matrix/0.015)**2)
-
+  # similarity_matrix = np.exp(-(average_distance_matrix/0.015)**2)
+  similarity_matrix = np.exp(-(average_distance_matrix/scale)**2)
   #Membership probabiltiy of each node to each cluster
   node_sum  = np.nansum(similarity_matrix,axis=0) #sum of similarities across the clusters for each node.
   probability_matrix = np.nan_to_num(similarity_matrix/node_sum, 0)
@@ -181,29 +181,45 @@ def cluster(inputs, measurements, scale = 0.015, resolution = 0.015):
   
     ##### CREATE THE GRAPH #######
     #Create a graph from a Delauny Triangulation:
-    Tri = Delaunay(inputs, qhull_options='i QJ')
-
     #Create the Adjacency Matrix from the Delauny Triangulation
     adj_matrix = np.zeros((inputs[:,0].size,inputs[:,0].size))
-  
-    for i in range(np.shape(Tri.simplices)[0]):
-        adj_matrix[Tri.simplices[i,0], Tri.simplices[i,1]] = 1
-        adj_matrix[Tri.simplices[i,1], Tri.simplices[i,0]] = 1
+    #Check if the data is all on the same layer:
+    Is_2d = np.std(inputs[:,2]) < 10e-6
+    
+    if Is_2d:
+        Tri = Delaunay(inputs[:,0:2], qhull_options='i QJ')
 
-        adj_matrix[Tri.simplices[i,0], Tri.simplices[i,2]] = 1
-        adj_matrix[Tri.simplices[i,2], Tri.simplices[i,0]] = 1
+        for i in range(np.shape(Tri.simplices)[0]):
+            adj_matrix[Tri.simplices[i,0], Tri.simplices[i,1]] = 1
+            adj_matrix[Tri.simplices[i,1], Tri.simplices[i,0]] = 1
 
-        adj_matrix[Tri.simplices[i,0], Tri.simplices[i,3]] = 1
-        adj_matrix[Tri.simplices[i,3], Tri.simplices[i,0]] = 1
+            adj_matrix[Tri.simplices[i,0], Tri.simplices[i,2]] = 1
+            adj_matrix[Tri.simplices[i,2], Tri.simplices[i,0]] = 1
 
-        adj_matrix[Tri.simplices[i,1], Tri.simplices[i,2]] = 1
-        adj_matrix[Tri.simplices[i,2], Tri.simplices[i,1]] = 1
+            adj_matrix[Tri.simplices[i,1], Tri.simplices[i,2]] = 1
+            adj_matrix[Tri.simplices[i,2], Tri.simplices[i,1]] = 1
 
-        adj_matrix[Tri.simplices[i,1], Tri.simplices[i,3]] = 1
-        adj_matrix[Tri.simplices[i,3], Tri.simplices[i,1]] = 1
-
-        adj_matrix[Tri.simplices[i,2], Tri.simplices[i,3]] = 1
-        adj_matrix[Tri.simplices[i,3], Tri.simplices[i,2]] = 1
+    else:
+        Tri = Delaunay(inputs, qhull_options='i QJ')
+      
+        for i in range(np.shape(Tri.simplices)[0]):
+            adj_matrix[Tri.simplices[i,0], Tri.simplices[i,1]] = 1
+            adj_matrix[Tri.simplices[i,1], Tri.simplices[i,0]] = 1
+    
+            adj_matrix[Tri.simplices[i,0], Tri.simplices[i,2]] = 1
+            adj_matrix[Tri.simplices[i,2], Tri.simplices[i,0]] = 1
+    
+            adj_matrix[Tri.simplices[i,0], Tri.simplices[i,3]] = 1
+            adj_matrix[Tri.simplices[i,3], Tri.simplices[i,0]] = 1
+    
+            adj_matrix[Tri.simplices[i,1], Tri.simplices[i,2]] = 1
+            adj_matrix[Tri.simplices[i,2], Tri.simplices[i,1]] = 1
+    
+            adj_matrix[Tri.simplices[i,1], Tri.simplices[i,3]] = 1
+            adj_matrix[Tri.simplices[i,3], Tri.simplices[i,1]] = 1
+    
+            adj_matrix[Tri.simplices[i,2], Tri.simplices[i,3]] = 1
+            adj_matrix[Tri.simplices[i,3], Tri.simplices[i,2]] = 1
 
   
     #Convert the Ajacency Matrix into a list of edges between nodes
@@ -233,7 +249,7 @@ def cluster(inputs, measurements, scale = 0.015, resolution = 0.015):
     #print('Rough Clustering')
 
     # Graph, labels, probabilities = get_membership_prob(Graph, cluster, measurements, distance_table)
-    Graph, labels, probabilities = get_local_membership_prob(Graph, cluster)
+    Graph, labels, probabilities = get_local_membership_prob(Graph, cluster, scale)
     #print('Cleaned')
     C = len(probabilities[0,:])
 
