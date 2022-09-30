@@ -10,6 +10,7 @@ from . import Intrinsic_data_analysis
 import numpy as np
 import networkx as nx
 from scipy.spatial import Delaunay
+from sklearn.cluster import SpectralClustering
 # class Distance_measures(Intrinsic_data_analysis):
 
 # class Similarity_measures(Intrinsic_data_analysis):
@@ -147,12 +148,48 @@ class Contiguous_Clustering(Clustering):
         
         return Graph
         
-    def Get_local_membership_prob(graph, clusters, scale):
+    def Get_local_membership_prob(graph, cluster_labels, v = 1):
         """Get the membership proabilities of each measurement beloning to each cluster
-        considering the structure of the graph."""
+        considering the structure of the graph.
+        #v is a parameter that adjusts the strentgh of the partitioning with the similarities
+        Get membership probabilites:
+        Create a containers for the distances, connections, and similarities 
+        of each node for each label.
+        Each label will be that row number, each node will be that column number. 
+        """
         
-        # Do a thing
-        return graph, labels, P_ik
+        
+        max_labels = np.max(cluster_labels)+1
+        max_nodes = len(cluster_labels)
+        cumulative_distance_maxtrix = np.zeros((max_labels, max_nodes))
+        cumulative_similarity_maxtrix = np.zeros((max_labels, max_nodes))
+        connection_matrix = np.zeros((max_labels, max_nodes))
+
+
+        for node in graph.nodes(data=True):
+            node_L = node[1]['Labels']
+            #Add the self-connection of this node to its label
+            connection_matrix[node_L,node[0]] += 1
+            #Find all the nieghbors and iterate over them.
+            edges = graph.edges(node[0], data = True)
+            for edge in edges:
+                connected_node_L = graph.nodes.data(data='Labels')[edge[1]]
+                #Add the connection of this node to the neighboring label
+                connection_matrix[connected_node_L,node[0]] += 1
+                #Add the distance and wieght of this node to the nieghboring label
+                cumulative_distance_maxtrix[connected_node_L, node[0]] += edge[2]["Distance"]
+                cumulative_similarity_maxtrix[connected_node_L, node[0]] += edge[2]["Weight"]
+
+        #Find the average distance and similarity 
+        #of each node to its nieghboring labels:
+        average_distance_matrix = cumulative_distance_maxtrix/connection_matrix
+        average_similarity_matrix = cumulative_similarity_maxtrix/connection_matrix
+        
+        #Convert the average similarities to probabilities 
+        node_sum  = np.nansum(average_similarity_matrix**v,axis=0) #sum of similarities across the clusters for each node.
+        probability_matrix = np.nan_to_num(average_similarity_matrix**v/node_sum, 0)
+        probabilities = probability_matrix.T
+        return probabilities
     
 class Contiguous_Fixed_K_Clustering(Contiguous_Clustering):
     """Use these algorithms when the number of clusters is known."""
@@ -161,8 +198,18 @@ class Contiguous_Fixed_K_Clustering(Contiguous_Clustering):
         pass
     
     @classmethod
-    def Spectral(locactions, graph):
-        # do spectral clustering using the weighted graph as the affinity. 
+    def Spectral(locactions, graph,
+                 n_clusters, eigen_solver=None, n_components=None, 
+                 random_state=None, n_init=10, eigen_tol=0.0, assign_labels='kmeans', 
+                 n_jobs=None, verbose=False):
+        
+        matrix = nx.adjacency_matrix(graph, weight = "Weight")
+        affinity = matrix.toarray()
+        
+        clusters = SpectralClustering(n_clusters, affinity = "precomputed", eigen_solver=None, n_components=None, 
+                                      random_state=None, n_init=10, eigen_tol=0.0, assign_labels='kmeans', 
+                                      n_jobs=None, verbose=False).fit(affinity)
+        labels = clusters.labels_
         return labels
     
     
