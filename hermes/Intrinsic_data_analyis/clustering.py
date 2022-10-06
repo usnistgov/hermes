@@ -24,7 +24,7 @@ class Clustering(Intrinsic_data_analysis):
     def __init__(self, locations, measurement_similarity):
         pass
     
-    def Get_global_membership_prob(cluster_labels, measurement_similarity, v=1, exclude_self=False):
+    def get_global_membership_prob(cluster_labels, measurement_similarity, v=1, exclude_self=False):
         """Get the probability of each measurement beloning to each cluster."""
         
         #cluster_labels is an array of the labels for each measurement.
@@ -75,7 +75,7 @@ class ContiguousClustering(Clustering):
         pass
     
     
-    def Form_graph(locations, measurement_distance, measurement_similarity):
+    def form_graph(locations, measurement_distance, measurement_similarity):
         """Forms a graph based on the measurement locations
         using a Delauny Triangulation. This type of graph will preserve the 
         contiguous constraint when cut.
@@ -148,7 +148,7 @@ class ContiguousClustering(Clustering):
         
         return Graph
         
-    def Get_local_membership_prob(graph, cluster_labels, v = 1):
+    def get_local_membership_prob(graph, cluster_labels, v = 1):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
         #v is a parameter that adjusts the strentgh of the partitioning with the similarities
@@ -191,14 +191,14 @@ class ContiguousClustering(Clustering):
         probabilities = probability_matrix.T
         return probabilities
     
-class Contiguous_Fixed_K_Clustering(Contiguous_Clustering):
+class ContiguousFixedKClustering(ContiguousClustering):
     """Use these algorithms when the number of clusters is known."""
     def __init__(self, locations, measurement_similarity):
         self.graph = self.Form_graph(locations, measurement_similarity)
         pass
     
     @classmethod
-    def Spectral(locactions, graph,
+    def spectral(locations, graph,
                  n_clusters, eigen_solver=None, n_components=None, 
                  random_state=None, n_init=10, eigen_tol=0.0, assign_labels='kmeans', 
                  n_jobs=None, verbose=False):
@@ -213,14 +213,14 @@ class Contiguous_Fixed_K_Clustering(Contiguous_Clustering):
         return labels
     
     
-class Contigous_Community_Discovery(Contiguous_Clustering):
+class ContigousCommunityDiscovery(ContiguousClustering):
     """Use these algorithms when the number of clusters is not known."""
     
     def __init__(self, locations, measurement_similarity):
         pass
     
     @classmethod
-    def RB_pots(locations, graph):
+    def rb_pots(locations, graph):
         return lables
     
     @classmethod
