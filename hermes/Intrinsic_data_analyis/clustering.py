@@ -61,7 +61,7 @@ class Clustering(Intrinsic_data_analysis):
         return probabilities
         
 
-class Contiguous_Clustering(Clustering):
+class ContiguousClustering(Clustering):
     """Use this algorthim to cluster data in domains with a contigious constraint.
     Example domains where this applies: Phase regions in a phase diagram, 
     grains in a micrograph, etc.
