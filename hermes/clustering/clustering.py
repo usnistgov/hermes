@@ -5,7 +5,7 @@ Created on Tue Sep 27 11:57:27 2022
 @author: Austin McDannald
 """
 
-from . import Intrinsic_data_analysis
+from hermes.ida import IDA
 
 import numpy as np
 import networkx as nx
@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class Cluster(Intrinsic_data_analysis):
+class Cluster(IDA):
     """Class for clustering algorithms."""
 
     locations: np.ndarray
@@ -30,7 +30,7 @@ class Cluster(Intrinsic_data_analysis):
 
     def get_global_membership_prob(
         self, cluster_labels: np.ndarray, v: float = 1.0, exclude_self: bool = False
-    ) -> np.ndarray:  #  CQ: v float or int?
+    ):  #  CQ: v float or int?
         """Get the probability of each measurement beloning to each cluster."""
 
         # cluster_labels is an array of the labels for each measurement.
