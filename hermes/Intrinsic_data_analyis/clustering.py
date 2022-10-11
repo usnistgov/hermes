@@ -5,19 +5,18 @@ Created on Tue Sep 27 11:57:27 2022
 @author: Austin McDannald
 """
 
-from . import Intrinsic_data_analysis
+# from . import Intrinsic_data_analysis
+# import Intrinsic_data_analysis
+from .clustering.Base import Intrinsic_data_analysis
 
 import numpy as np
+
 import networkx as nx
+from cdlib import algorithms
+
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
-# class Distance_measures(Intrinsic_data_analysis):
-
-# class Similarity_measures(Intrinsic_data_analysis):
-#     sim = exp(-distance^2)
-    
-#     sim = 1/(dist+epsilon)
-    
+   
 
 class Clustering(Intrinsic_data_analysis):
     """Class for clustering algorithms."""
@@ -147,7 +146,8 @@ class Contiguous_Clustering(Clustering):
            nx.set_edge_attributes(Graph, {(j,k): measurement_similarity[j,k]}, name= 'Weight' )
         
         return Graph
-        
+    
+    @classmethod    
     def Get_local_membership_prob(graph, cluster_labels, v = 1):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
@@ -210,7 +210,11 @@ class Contiguous_Fixed_K_Clustering(Contiguous_Clustering):
                                       random_state=None, n_init=10, eigen_tol=0.0, assign_labels='kmeans', 
                                       n_jobs=None, verbose=False).fit(affinity)
         labels = clusters.labels_
-        return labels
+        
+        """Get the local membership probabilities"""
+        graph, labels, probabilities =  super().Get_local_membership_prob(graph, labels, v = 1)
+        
+        return graph, labels, probabilities
     
     
 class Contigous_Community_Discovery(Contiguous_Clustering):
@@ -220,12 +224,40 @@ class Contigous_Community_Discovery(Contiguous_Clustering):
         pass
     
     @classmethod
-    def RB_pots(locations, graph):
-        return lables
+    def RB_pots(graph, resolution = 0.015):
+        """Cut the graph using RB_pots"""
+        clusters = algorithms.rb_pots(graph, weights='weight', resolution_parameter=resolution)
+        
+        #Label the graph with the clusters
+        for k in range(len(clusters.communities)):
+            K = clusters.communities[k]
+            for i in K:
+                nx.set_node_attributes(graph, {i: k}, name='Labels')
+
+        labels = np.asarray(graph.nodes.data(data='Labels'))[:,1]
+        
+        """Get the local membership probabilities"""
+        graph, labels, probabilities =  super().Get_local_membership_prob(graph, labels, v = 1)
+        
+        return graph, labels, probabilities
     
     @classmethod
-    def gl_expansion():
-        return lables
+    def generaric_cdlib(graph, method_name, **kwargs):
+        """call the community discovery method within CDLIB"""
+        method = getattr(algorithms, method_name)
+        clusters = method(graph, **kwargs)
+        
+        #Label the graph with the clusters
+        for k in range(len(clusters.communities)):
+            K = clusters.communities[k]
+            for i in K:
+                nx.set_node_attributes(graph, {i: k}, name='Labels')
+
+        labels = np.asarray(graph.nodes.data(data='Labels'))[:,1]
+        
+        """Get the local membership probabilities"""
+        graph, labels, probabilities =  super().Get_local_membership_prob(graph, labels, v = 1)
+        return graph, labels, probabilities
     
     
     @classmethod
@@ -233,7 +265,7 @@ class Contigous_Community_Discovery(Contiguous_Clustering):
         """Call a fixed k clustering method iteratively 
         using the Gap Statisic method to choose K."""
         
-        
+        print("Not implmented yet")
 
     
     
