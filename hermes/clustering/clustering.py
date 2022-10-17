@@ -5,13 +5,14 @@ Created on Tue Sep 27 11:57:27 2022
 @author: Austin McDannald
 """
 
-from hermes.ida import IDA
+from dataclasses import dataclass, field
 
-import numpy as np
 import networkx as nx
+import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
-from dataclasses import dataclass, field
+
+from hermes.ida import IDA
 
 # class Distance_measures(Intrinsic_data_analysis):
 
