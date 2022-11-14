@@ -14,7 +14,8 @@ from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
 from hermes.ida import IDA
-from hermes.utils import compute_distance, compute_similarity
+from hermes.pairwise_metrics import compute_distance, compute_similarity
+from hermes.schemas import PrivateAttr
 
 # class Distance_measures(Intrinsic_data_analysis):
 
@@ -30,14 +31,20 @@ class Cluster(IDA):
 
     locations: np.ndarray
     measurements: np.ndarray
+    locations_similarity: np.ndarray = field(init=False)
+    locations_distance: np.ndarray = field(init=False)
     measurement_similarity: np.ndarray = field(init=False)
     measurement_distance: np.ndarray = field(init=False)
-    __similarity: dict = {"set": False, "type": "q"}
-    __distance: dict = {"set": False, "type": "q"}
-    __distance_set: bool = False
+    __similarity: PrivateAttr
+    __distance: PrivateAttr
     # similarity and distance type?
 
     def _set_similarity(self, tp: str = "q"):  # tp = type
+        if self.__similarity:
+            return
+        if not self.__distance:
+            compute_distance()
+            pass
         # self.__similarity["type"] = tp
         # use similarity type to compute
         similarity = compute_similarity(tp, self.locations, self.measurements)
@@ -46,6 +53,8 @@ class Cluster(IDA):
         return
 
     def _set_distance(self, tp: str = "q"):
+        if self.__distance["set"]:
+            return
         # self.__distance["type"] = tp
         # use distance type to compute
         distance = compute_distance(tp, self.locations, self.measurements)
@@ -107,12 +116,15 @@ class ContiguousCluster(Cluster):
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
 
-    def form_graph(self, measurement_distance: np.ndarray) -> nx.Graph:
+    def form_graph(self) -> nx.Graph:
         """Forms a graph based on the measurement locations
         using a Delauny Triangulation. This type of graph will preserve the
         contiguous constraint when cut.
         Assigns the measurement distance and similarity as edge attributes.
         Returns a networkx graph object."""
+
+        self._set_distance()  # call set distance
+        self._set_similarity()  # call set distance
 
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
@@ -174,7 +186,7 @@ class ContiguousCluster(Cluster):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
             nx.set_edge_attributes(
-                graph, {(j, k): measurement_distance[j, k]}, name="Distance"
+                graph, {(j, k): self.measurement_distance[j, k]}, name="Distance"
             )
             nx.set_edge_attributes(
                 graph, {(j, k): self.measurement_similarity[j, k]}, name="Weight"
