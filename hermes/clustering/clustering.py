@@ -6,7 +6,7 @@ Created on Tue Sep 27 11:57:27 2022
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Type
 
 import networkx as nx
 import numpy as np
@@ -16,6 +16,8 @@ from sklearn.cluster import SpectralClustering
 from hermes.ida import IDA
 from hermes.pairwise_metrics import compute_distance, compute_similarity
 from hermes.schemas import PrivateAttr
+from hermes.distance import BaseDistance
+from hermes.similarity import BaseSimilarity
 
 # class Distance_measures(Intrinsic_data_analysis):
 
@@ -24,13 +26,15 @@ from hermes.schemas import PrivateAttr
 
 #     sim = 1/(dist+epsilon)
 
+class UnspecifiedType(Exception):
+    pass
 
 @dataclass
 class Cluster(IDA):
     """Class for clustering algorithms."""
 
-    locations: np.ndarray
     measurements: np.ndarray
+    locations: np.ndarray = field() # make optional
     locations_similarity: np.ndarray = field(init=False)
     locations_distance: np.ndarray = field(init=False)
     measurement_similarity: np.ndarray = field(init=False)
@@ -39,25 +43,31 @@ class Cluster(IDA):
     __distance: PrivateAttr
     # similarity and distance type?
 
-    def _set_similarity(self, tp: str = "q"):  # tp = type
+    def set_measurement_similarity(self, tp: Type[BaseSimilarity], **kwargs):  # tp = type distance type as kwarg?
+        assert issubclass(tp, BaseSimilarity), ValueError("Incorrect similarity type")
+        # add checks if tp needs locations sim:
+        if tp._needs_locations:
+            self.set_locations_similarity()
+            pass
+        if not self.__distance:
+            raise UnspecifiedType("Please specify a distance type with `distance_type`")
+        self.set_distance(kwargs["distance_type"])
         if self.__similarity:
             return
-        if not self.__distance:
-            compute_distance()
-            pass
-        # self.__similarity["type"] = tp
-        # use similarity type to compute
-        similarity = compute_similarity(tp, self.locations, self.measurements)
+        self.__similarity.metric_type = tp
+        similarity = compute_similarity(tp, self.measurements, self.measurements, **kwargs)
         # self.__similarity["set"]= True
         self.measurement_similarity = similarity
         return
 
-    def _set_distance(self, tp: str = "q"):
-        if self.__distance["set"]:
+    # make pairwise_metrics smart enough: type defines what is x and y
+    # parecido to above in similarity
+    def set_distance(self, tp: Type[BaseDistance], **kwargs):
+        assert issubclass(tp, BaseDistance), ValueError("Incorrect distance type")
+        if self.__distance:
             return
-        # self.__distance["type"] = tp
-        # use distance type to compute
-        distance = compute_distance(tp, self.locations, self.measurements)
+        self.__distance.metric_type = tp
+        distance = compute_distance(tp, self.locations, self.measurements, **kwargs)
         # self.__distance["set"]= True
         self.measurement_distance = distance
         return
@@ -123,8 +133,8 @@ class ContiguousCluster(Cluster):
         Assigns the measurement distance and similarity as edge attributes.
         Returns a networkx graph object."""
 
-        self._set_distance()  # call set distance
-        self._set_similarity()  # call set distance
+        self.set_distance()  # call set distance
+        self.set_similarity()  # call set distance
 
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))

@@ -1,3 +1,9 @@
-from distance import BaseDistance
+from distance import *
 
-__all__ = ["BaseDistance"]
+__all__ = [
+        "BaseDistance",
+        "EuclidianDistance",
+        "CosineDistance",
+        "PNormDistance",
+        "OrientationDistance"
+        ]
