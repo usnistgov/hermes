@@ -10,6 +10,8 @@ import orix
 import pandas as pd
 from sklearn.metrics.cluster import adjusted_rand_score
 
+import re
+r = re.compile("\d+$")
 
 class EBSDModelsEnum(str, Enum):
     Heteroscedastic = "Heteroscedastic"
@@ -100,7 +102,10 @@ class EBSD(DataWrangler):
     def load_ground_truth(self, path: Union[Path, str], names: list):
         self.ground_truth = pd.read_fwf(path, names=names)
 
-    def load_ang(self, path: Union[Path, str]):
+    def load_ang(self, path: Union[Path, str], initial_layer_depth=-0.4, depth_step=0.2):
+        #Assuming the last few characters are the layers
+        layer = int(r.search(str.split(".")[0])[0]) - 1
+        
         # Read .ang file
         if isinstance(path, str):
             path = Path(path)
@@ -109,8 +114,6 @@ class EBSD(DataWrangler):
 
         assert path.suffix == ".ang", "Invalid ang file"
         self.cm = orix.io.loadang(path)
-        ### data = cm.conj
-        # data = cm.data
 
         # Read each column from the .ang file
         (
@@ -125,7 +128,7 @@ class EBSD(DataWrangler):
             self.di,
             self.fit,
         ) = np.loadtxt(path, unpack=True)
-        self.data = np.concatenate(
+        self.measurements = np.concatenate(
             (
                 self.euler1.reshape(-1, 1),
                 self.euler2.reshape(-1, 1),
@@ -135,13 +138,15 @@ class EBSD(DataWrangler):
         )
 
         # List the xyz locations
-        """Assumes z=-0.4"""
+        z = layer*depth_step + initial_layer_depth
         input_loc = np.concatenate(
             (self.x.reshape(-1, 1), self.y.reshape(-1, 1)), axis=1
         )
-        self.input_loc = np.concatenate(
-            (input_loc, -0.4 * np.ones_like(self.x.reshape(-1, 1))), axis=1
+        self.real_locations = np.concatenate(
+            (input_loc, z * np.ones_like(self.x.reshape(-1, 1))), axis=1
         )
+        
+        return self.real_locations, self.measurements
 
     @property
     def ground_truth_labels(self):

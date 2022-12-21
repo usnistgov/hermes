@@ -284,11 +284,11 @@ class ContigousCommunityDiscovery(ContiguousCluster):
 
     @classmethod
     def rb_pots(cls, locations, graph):
-        return lables
+        return labels
 
     @classmethod
     def gl_expansion(cls):
-        return lables
+        return labels
 
     @classmethod
     def iteritative_fixed_k(cls, locations, graph):
