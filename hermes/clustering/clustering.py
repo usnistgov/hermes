@@ -284,6 +284,9 @@ class ContigousCommunityDiscovery(ContiguousCluster):
 
     @classmethod
     def rb_pots(cls, locations, graph):
+        #take in the locations and measurements
+        #calculate the graph
+        #return the cluster labels and probabilities. 
         return labels
 
     @classmethod
