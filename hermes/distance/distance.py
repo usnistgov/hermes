@@ -11,6 +11,7 @@ needs_locations = {
     "EuclidianDistance" : False,
     "CosineDistance" : True
 }
+
 @dataclass
 class BaseDistance:
     def _needs_locations(self):
@@ -23,33 +24,38 @@ class EuclidianDistance(BaseDistance):
         distance_matrix = pairwise_distances(X, Y, metric = "euclidean")
         return distance_matrix
 
+@dataclass
 class CosineDistance(BaseDistance):
     @classmethod
     def calculate(cls, X, Y=None):
         distance_matrix = pairwise_distances(X, Y, metric = "cosine")
         return distance_matrix
 
+@dataclass
 class PNormDistance(BaseDistance):
+    #Unless otherwise specifed P is set to 2 (Equivelent to Euclidean Distance) 
+    P:np.float64 = 2 
     @classmethod
-    def calculate(cls, X, Y=None, P=2):
+    def calculate(cls, X, Y=None):
         '''Calculate the L-Norm with degree P.
         P = 2 is equivalent to Euclidean
         P = 1 is equivalent to Manhattan aka Taxi Cab aka City Block'''
         if Y is None:
             Y = X 
         difference = X - Y 
-        if P == 0:
+        if cls.P == 0:
             raise ZeroDivisionError("Division by Zero: Undefined")
-        elif P == np.inf:
+        elif cls.P == np.inf:
             stack = np.dstack((X,Y))
             distance = np.max(np.abs(stack), axis = 2)
         else:
-            exponentiation = difference**P 
+            exponentiation = difference**cls.P 
             sums = np.sum(exponentiation, axis = 1)
-            distance = sums**(1/P)
+            distance = sums**(1/cls.P)
         distance_matrix = distance.reshape(X.shape[0], Y.shape[0])
         return distance_matrix
 
+@dataclass
 class OrientationDistance(BaseDistance):
     @classmethod
     def calculate(cls, X, sym_x, Y=None, sym_y = None, convert_from_Euler = False):
