@@ -89,6 +89,9 @@ class XRD(DataWrangler):
 
     pass
 
+class XRDEmulator(XRD):
+    pass
+
 
 class SEM(DataWrangler):
     """Instrument type class"""

@@ -1,9 +1,10 @@
-from distance import *
+from .distance import *
+from .compute_register import *
 
 __all__ = [
         "BaseDistance",
         "EuclidianDistance",
         "CosineDistance",
         "PNormDistance",
-        "OrientationDistance"
+        "compute_distance",
         ]
