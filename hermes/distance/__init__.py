@@ -1,10 +1,10 @@
-from .distance import *
-from .compute_register import *
+from hermes.distance.distance import *
+from hermes.distance.similarity import *
 
 __all__ = [
-        "BaseDistance",
-        "EuclidianDistance",
-        "CosineDistance",
-        "PNormDistance",
-        "compute_distance",
-        ]
+    "BaseDistance",
+    "BaseSimilarity",
+    "EuclidianDistance",
+    "CosineDistance",
+    "PNormDistance",
+]

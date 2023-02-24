@@ -6,7 +6,7 @@ Created on Tue Sep 27 11:57:27 2022
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Type
+from typing import Optional, Type, TypeVar
 
 import networkx as nx
 import numpy as np
@@ -14,9 +14,9 @@ from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
 from hermes.ida import IDA
-from hermes.pairwise_metrics import compute_distance, compute_similarity
 from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
+from hermes.distance.compute_register import compute_distance, compute_similarity
 from hermes.similarity import BaseSimilarity
 
 # class Distance_measures(Intrinsic_data_analysis):
@@ -29,24 +29,34 @@ from hermes.similarity import BaseSimilarity
 class UnspecifiedType(Exception):
     pass
 
+BaseSimilarity = TypeVar("BaseSimilarity", bound=BaseSimilarity)
+BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
+
+
+def _compute_distance(type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray]=None):
+    return type_.calculate(X, Y)
+
+def _default_ndarray():
+    return np.array(list())
+
 @dataclass
 class Cluster(IDA):
     """Class for clustering algorithms."""
 
+    __similarity: PrivateAttr
+    __distance: PrivateAttr
     measurements: np.ndarray
-    locations: np.ndarray = field() # make optional
+    locations: Optional[np.ndarray] = field(default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(init=False)
     locations_distance: np.ndarray = field(init=False)
     measurement_similarity: np.ndarray = field(init=False)
     measurement_distance: np.ndarray = field(init=False)
-    __similarity: PrivateAttr
-    __distance: PrivateAttr
     # similarity and distance type?
 
-    def set_measurement_similarity(self, tp: Type[BaseSimilarity], **kwargs):  # tp = type distance type as kwarg?
-        assert issubclass(tp, BaseSimilarity), ValueError("Incorrect similarity type")
-        # add checks if tp needs locations sim:
-        if tp._needs_locations:
+    def set_measurement_similarity(self, type_: Type[BaseSimilarity], **kwargs):  # type_ = type distance type as kwarg?
+        assert issubclass(type_, BaseSimilarity), ValueError("Incorrect similarity type")
+        # add checks if type_ needs locations sim:
+        if type_._needs_locations:
             self.set_locations_similarity()
             pass
         if not self.__distance:
@@ -54,20 +64,20 @@ class Cluster(IDA):
         self.set_distance(kwargs["distance_type"])
         if self.__similarity:
             return
-        self.__similarity.metric_type = tp
-        similarity = compute_similarity(tp, self.measurements, self.measurements, **kwargs)
+        self.__similarity.metric_type = type_
+        similarity = compute_similarity(type_, self.measurements, self.measurements, **kwargs)
         # self.__similarity["set"]= True
         self.measurement_similarity = similarity
         return
 
     # make pairwise_metrics smart enough: type defines what is x and y
     # parecido to above in similarity
-    def set_distance(self, tp: Type[BaseDistance], **kwargs):
-        assert issubclass(tp, BaseDistance), ValueError("Incorrect distance type")
+    def set_distance(self, type_: Type[BaseDistance], **kwargs):
+        assert issubclass(type_, BaseDistance), ValueError("Incorrect distance type")
         if self.__distance:
             return
-        self.__distance.metric_type = tp
-        distance = compute_distance(tp, self.locations, self.measurements, **kwargs)
+        self.__distance.metric_type = type_
+        distance = _compute_distance(type_, self.locations, self.measurements, **kwargs)
         # self.__distance["set"]= True
         self.measurement_distance = distance
         return

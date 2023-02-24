@@ -1,4 +1,5 @@
 from numpy import ndarray
+import numpy as np
 from sklearn.metrics import pairwise_distances
 from orix.quaternion.orientation import Misorientation
 from orix.quaternion import symmetry
@@ -49,3 +50,6 @@ def compute_distance(tp: str, locations: ndarray, measurements: ndarray):
         case "reverese":
             distance = measurements/locations
     return distance
+
+def find_new_locations(w: ndarray, m: ndarray) -> ndarray:
+    return np.array([x for x in w if x not in m])

@@ -1,6 +1,6 @@
 """Top-level package for Hermes Python."""
 
-from .distance import *
+from hermes.distance import BaseDistance, EuclidianDistance, CosineDistance, PNormDistance
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
