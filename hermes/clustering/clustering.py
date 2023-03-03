@@ -13,10 +13,8 @@ import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
-from hermes.ida import IDA
 from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
-from hermes.distance.compute_register import compute_distance, compute_similarity
 from hermes.similarity import BaseSimilarity
 
 # class Distance_measures(Intrinsic_data_analysis):
@@ -26,18 +24,30 @@ from hermes.similarity import BaseSimilarity
 
 #     sim = 1/(dist+epsilon)
 
+
+class IDA:
+    """Base Class for IDA."""
+
+
 class UnspecifiedType(Exception):
+    """Raised when no Distance or Similarity type is specified."""
+
     pass
+
 
 BaseSimilarity = TypeVar("BaseSimilarity", bound=BaseSimilarity)
 BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
 
 
-def _compute_distance(type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray]=None):
+def _compute_distance(
+    type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None
+):
     return type_.calculate(X, Y)
+
 
 def _default_ndarray():
     return np.array(list())
+
 
 @dataclass
 class Cluster(IDA):
@@ -53,8 +63,12 @@ class Cluster(IDA):
     measurement_distance: np.ndarray = field(init=False)
     # similarity and distance type?
 
-    def set_measurement_similarity(self, type_: Type[BaseSimilarity], **kwargs):  # type_ = type distance type as kwarg?
-        assert issubclass(type_, BaseSimilarity), ValueError("Incorrect similarity type")
+    def set_measurement_similarity(
+        self, type_: Type[BaseSimilarity], **kwargs
+    ):  # type_ = type distance type as kwarg?
+        assert issubclass(type_, BaseSimilarity), ValueError(
+            "Incorrect similarity type"
+        )
         # add checks if type_ needs locations sim:
         if type_._needs_locations:
             self.set_locations_similarity()
@@ -65,7 +79,9 @@ class Cluster(IDA):
         if self.__similarity:
             return
         self.__similarity.metric_type = type_
-        similarity = compute_similarity(type_, self.measurements, self.measurements, **kwargs)
+        similarity = compute_similarity(
+            type_, self.measurements, self.measurements, **kwargs
+        )
         # self.__similarity["set"]= True
         self.measurement_similarity = similarity
         return
@@ -277,7 +293,6 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
     @classmethod
     def spectral(cls, graph: nx.Graph, n_clusters: int, **kwargs):
-
         matrix = nx.adjacency_matrix(graph, weight="Weight")
         affinity = matrix.toarray()
 
@@ -294,9 +309,9 @@ class ContigousCommunityDiscovery(ContiguousCluster):
 
     @classmethod
     def rb_pots(cls, locations, graph):
-        #take in the locations and measurements
-        #calculate the graph
-        #return the cluster labels and probabilities. 
+        # take in the locations and measurements
+        # calculate the graph
+        # return the cluster labels and probabilities.
         return labels
 
     @classmethod

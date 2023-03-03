@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from hermes.distance.base import BaseDS
 
 import numpy as np
-from sklearn.metrics.pairwise import haversine_distances, cosine_distances
+from sklearn.metrics.pairwise import haversine_distances
 
 # TODO dynamic time warping dtw-python 1.3.0
-from scipy.stats import wasserstein_distance  # TODO
+from scipy.stats import wasserstein_distance
 from sklearn.metrics import pairwise_distances
 
 from orix.quaternion.orientation import Misorientation
@@ -14,6 +14,8 @@ from orix.quaternion import symmetry
 
 @dataclass
 class BaseDistance(BaseDS):
+    """Base class for distance types."""
+
     def _needs_locations(self):
         return self.needs_locations
 
@@ -21,6 +23,8 @@ class BaseDistance(BaseDS):
 # TODO utility function for ops on X, Y if not same dim
 @dataclass
 class EuclidianDistance(BaseDistance):
+    """Euclidian Distance. L2Norm."""
+
     @classmethod
     def calculate(cls, X, Y=None):
         distance_matrix = pairwise_distances(X, Y, metric="euclidean")
@@ -56,7 +60,7 @@ class PNormDistance(BaseDistance):
             stack = np.dstack((X, Y))
             distance = np.max(np.abs(stack), axis=2)
         else:
-            print("ekse")
+            print("else")
             exponentiation = difference**self.P
             sums = np.sum(exponentiation, axis=1)
             distance = sums ** (1 / self.P)
@@ -64,6 +68,24 @@ class PNormDistance(BaseDistance):
         print(distance)
         distance_matrix = distance.reshape(X.shape[0], Y.shape[0])
         return distance_matrix
+
+
+@dataclass
+class WassersteinDistance(BaseDistance):
+    """Wrapper for Wasserstein Distance from scipy."""
+
+    @classmethod
+    def calculate(cls, X, Y=None, X_weights=None, Y_weights=None):
+        return wasserstein_distance(X, Y, X_weights, Y_weights)
+
+
+@dataclass
+class HaversineDistance(BaseDistance):
+    """Wrapper for Haversine Distance from sklearn."""
+
+    @classmethod
+    def calculate(cls, X, Y=None):
+        return haversine_distances(X, Y)
 
 
 # TODO Orientation distance
