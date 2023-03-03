@@ -1,16 +1,24 @@
 [tool.poetry]
+authors = [
+  "Austin McDannald <austin.mcdannald@nist.gov>",
+  "Brian DeCost <brian.decost@nist.gov>",
+  "Howie Joress <howie.joress@nist.gov>",
+  "Gilad Kusne <aaron.kusne@nist.gov>",
+  "Zach Trautt <zachary.trautt@nist.gov>",
+  "Camilo Velez <camilo.velezramirez@nist.gov>",
+]
+description = "flexible materials modeling and lab automation"
 name = "hermes"
 version = "0.1.0"
-description = "flexible materials modeling and lab automation"
-authors = ["Austin McDannald <austin.mcdannald@nist.gov>", "Brian DeCost <brian.decost@nist.gov>",  "Howie Joress <howie.joress@nist.gov>",  "Gilad Kusne <aaron.kusne@nist.gov>", "Zach Trautt <zachary.trautt@nist.gov>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
 numpy = "^1.22.1"
 pandas = "^1.4.0"
+python = "^3.8"
+dtw-python = "^1.3.0"
 
 [tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
