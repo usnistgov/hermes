@@ -1,23 +1,22 @@
+"""Distance classes and methods."""
 from dataclasses import dataclass
-from hermes.distance.base import BaseDS
 
 import numpy as np
-from sklearn.metrics.pairwise import haversine_distances
 
-# TODO dynamic time warping dtw-python 1.3.0
+# TODO dynamic time warping dtw-python 1.3.0 ASK
 from scipy.stats import wasserstein_distance
 from sklearn.metrics import pairwise_distances
+from sklearn.metrics.pairwise import haversine_distances
 
-from orix.quaternion.orientation import Misorientation
-from orix.quaternion import symmetry
+from hermes.base import BaseDS
+
+# from orix.quaternion.orientation import Misorientation
+# from orix.quaternion import symmetry
 
 
 @dataclass
 class BaseDistance(BaseDS):
     """Base class for distance types."""
-
-    def _needs_locations(self):
-        return self.needs_locations
 
 
 # TODO utility function for ops on X, Y if not same dim
@@ -32,10 +31,16 @@ class EuclidianDistance(BaseDistance):
 
 
 # TODO classes for imported sklearn
+"""
+From sklearn valid tp's are: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’, ‘manhattan’],
+From scipy valid tp's are: [‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’]
+"""
 
 
 @dataclass
 class CosineDistance(BaseDistance):
+    """Cosine Distance."""
+
     @classmethod
     def calculate(cls, X, Y=None):
         distance_matrix = pairwise_distances(X, Y, metric="cosine")
@@ -43,8 +48,42 @@ class CosineDistance(BaseDistance):
 
 
 @dataclass
+class CityBlockDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+    @classmethod
+    def calculate(cls, X, Y=None):
+        distance_matrix = pairwise_distances(X, Y, metric="cityblock")
+        return distance_matrix
+
+
+@dataclass
+class L1Distance(BaseDistance):
+    """Sklearn wrapper."""
+
+    @classmethod
+    def calculate(cls, X, Y=None):
+        distance_matrix = pairwise_distances(X, Y, metric="l1")
+        return distance_matrix
+
+
+@dataclass
+class L2Distance(BaseDistance):
+    """Sklearn wrapper."""
+
+    @classmethod
+    def calculate(cls, X, Y=None):
+        distance_matrix = pairwise_distances(X, Y, metric="l2")
+        return distance_matrix
+
+
+# TODO ASK questions abut this
+
+
+@dataclass
 class PNormDistance(BaseDistance):
-    # Unless otherwise specifed P is set to 2 (Equivelent to Euclidean Distance)
+    """PNorm Distance. Unless otherwise specified, p = 2 - equivalent to Euclidian Distance."""
+
     P: float = 2.0
 
     def calculate(self, X, Y=None):

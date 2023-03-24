@@ -1,18 +1,33 @@
-def rescale_2d_data_linear(x1,y1,x2):
+"""Remap data."""
+
+
+class ListNotSorted(Exception):
+    """Raised when input list is not sorted."""
+
+
+class OutOfRange(Exception):
+    """Raised when range of input lists differ."""
+
+
+def _raise_not_sorted(name: str):
+    raise ListNotSorted("input list %s is not sorted" % (name))
+
+
+def rescale_2d_data_linear(x1, y1, x2):
     # linear interopolation
     y2 = list()
     if min(x2) < min(x1):
-        raise Exception("Out of range min(x2) < min(x1)")
+        raise OutOfRange("Out of range min(x2) < min(x1)")
     if max(x2) > max(x1):
-        raise Exception("Out of range max(x2) > max(x1)")
+        raise OutOfRange("Out of range max(x2) > max(x1)")
     if x1 != sorted(x1):
-        raise Exception("input list x1 is not sorted")
+        _raise_not_sorted("x1")
     if x2 != sorted(x2):
-        raise Exception("input list x2 is not sorted")
-    
-    id_x = 0;
+        _raise_not_sorted("x2")
+
+    id_x = 0
     for x in x2:
-        y=None
+        y = None
         x_p0 = x1[id_x]
         if x == x_p0:
             # perfect match
@@ -20,7 +35,6 @@ def rescale_2d_data_linear(x1,y1,x2):
         else:
             x_p1 = x1[id_x + 1]
             while x_p1 < x:
-                #print('next',x_p0,x,x_p1)
                 id_x = id_x + 1
                 x_p0 = x1[id_x]
                 x_p1 = x1[id_x + 1]
@@ -41,8 +55,8 @@ def rescale_2d_data_linear(x1,y1,x2):
             y2.append(y)
         else:
             raise Exception("Something went wrong during rescale at location:", x)
-    
+
     if len(x2) != len(y2):
         raise Exception("Something went wrong lists not equal")
-    
+
     return y2

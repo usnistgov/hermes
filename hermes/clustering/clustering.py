@@ -16,6 +16,7 @@ from sklearn.cluster import SpectralClustering
 from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
 from hermes.similarity import BaseSimilarity
+from hermes.base import Analysis
 
 # class Distance_measures(Intrinsic_data_analysis):
 
@@ -23,10 +24,6 @@ from hermes.similarity import BaseSimilarity
 #     sim = exp(-distance^2)
 
 #     sim = 1/(dist+epsilon)
-
-
-class IDA:
-    """Base Class for IDA."""
 
 
 class UnspecifiedType(Exception):
@@ -42,7 +39,7 @@ BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
 def _compute_distance(
     type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None
 ):
-    return type_.calculate(X, Y)
+    return type_.calculate(X, Y)  # type: ignore
 
 
 def _default_ndarray():
@@ -50,11 +47,11 @@ def _default_ndarray():
 
 
 @dataclass
-class Cluster(IDA):
+class Cluster(Analysis):
     """Class for clustering algorithms."""
 
-    __similarity: PrivateAttr
-    __distance: PrivateAttr
+    _similarity: PrivateAttr
+    _distance: PrivateAttr
     measurements: np.ndarray
     locations: Optional[np.ndarray] = field(default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(init=False)

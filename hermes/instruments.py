@@ -1,4 +1,4 @@
-"""Instrument Classes"""
+"""Instrument Classes."""
 from enum import Enum
 from pathlib import Path
 from typing import Union
@@ -11,7 +11,9 @@ import pandas as pd
 from sklearn.metrics.cluster import adjusted_rand_score
 
 import re
+
 r = re.compile("\d+$")
+
 
 class EBSDModelsEnum(str, Enum):
     Heteroscedastic = "Heteroscedastic"
@@ -89,6 +91,7 @@ class XRD(DataWrangler):
 
     pass
 
+
 class XRDEmulator(XRD):
     pass
 
@@ -105,10 +108,12 @@ class EBSD(DataWrangler):
     def load_ground_truth(self, path: Union[Path, str], names: list):
         self.ground_truth = pd.read_fwf(path, names=names)
 
-    def load_ang(self, path: Union[Path, str], initial_layer_depth=-0.4, depth_step=0.2):
-        #Assuming the last few characters are the layers
+    def load_ang(
+        self, path: Union[Path, str], initial_layer_depth=-0.4, depth_step=0.2
+    ):
+        # Assuming the last few characters are the layers
         layer = int(r.search(str.split(".")[0])[0]) - 1
-        
+
         # Read .ang file
         if isinstance(path, str):
             path = Path(path)
@@ -141,14 +146,14 @@ class EBSD(DataWrangler):
         )
 
         # List the xyz locations
-        z = layer*depth_step + initial_layer_depth
+        z = layer * depth_step + initial_layer_depth
         input_loc = np.concatenate(
             (self.x.reshape(-1, 1), self.y.reshape(-1, 1)), axis=1
         )
         self.real_locations = np.concatenate(
             (input_loc, z * np.ones_like(self.x.reshape(-1, 1))), axis=1
         )
-        
+
         return self.real_locations, self.measurements
 
     @property
@@ -225,6 +230,7 @@ class EBSD(DataWrangler):
                 "Homoscedastic": GPCClassifier,
                 "Heteroscedastic": HSGPCClassifier,
             }
+
             # Train
             def __prob(cl, prob):
                 if cl == "Homoscedastic":

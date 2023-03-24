@@ -4,8 +4,9 @@ Created on Tue Sep 27 12:15:35 2022
 
 @author: Austin McDannald
 """
+from hermes.base.analysis import Analysis
+from hermes.base.ds import BaseDS
+from hermes.base.pipelines import BaseDataPipeline
+from hermes.base.archive import BaseArchive
 
-class Intrinsic_data_analysis:
-    """Base level class for analyising the intrinsic properties of the data.
-    All inputs are treated as features."""
-    pass
+__all__ = ["Analysis", "BaseDS", "BaseDataPipeline", "BaseArchive"]
