@@ -19,65 +19,54 @@ class BaseDistance(BaseDS):
     """Base class for distance types."""
 
 
-# TODO utility function for ops on X, Y if not same dim
-@dataclass
+def sklearnwrapper(metric: str):
+    """Decorator for sklearn distances wrappers."""
+
+    def wrapper(cls):
+        def calculate(cls, X, Y=None):  # type: ignore
+            distance_matrix = pairwise_distances(X, Y, metric=metric)
+            return distance_matrix
+
+        cls.calculate = classmethod(calculate)
+        return cls
+
+    return wrapper
+
+
+@sklearnwrapper("euclidian")
 class EuclidianDistance(BaseDistance):
     """Euclidian Distance. L2Norm."""
 
-    @classmethod
-    def calculate(cls, X, Y=None):
-        distance_matrix = pairwise_distances(X, Y, metric="euclidean")
-        return distance_matrix
 
-
-# TODO classes for imported sklearn
 """
 From sklearn valid tp's are: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’, ‘manhattan’],
 From scipy valid tp's are: [‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’]
 """
 
 
-@dataclass
+@sklearnwrapper("cosine")
 class CosineDistance(BaseDistance):
     """Cosine Distance."""
 
-    @classmethod
-    def calculate(cls, X, Y=None):
-        distance_matrix = pairwise_distances(X, Y, metric="cosine")
-        return distance_matrix
 
-
-@dataclass
+@sklearnwrapper("cityblock")
 class CityBlockDistance(BaseDistance):
-    """Sklearn wrapper."""
-
-    @classmethod
-    def calculate(cls, X, Y=None):
-        distance_matrix = pairwise_distances(X, Y, metric="cityblock")
-        return distance_matrix
+    """CityBlock Distance."""
 
 
-@dataclass
+@sklearnwrapper("l1")
 class L1Distance(BaseDistance):
-    """Sklearn wrapper."""
-
-    @classmethod
-    def calculate(cls, X, Y=None):
-        distance_matrix = pairwise_distances(X, Y, metric="l1")
-        return distance_matrix
+    """L1 Distance."""
 
 
-@dataclass
+@sklearnwrapper("l2")
 class L2Distance(BaseDistance):
     """Sklearn wrapper."""
 
-    @classmethod
-    def calculate(cls, X, Y=None):
-        distance_matrix = pairwise_distances(X, Y, metric="l2")
-        return distance_matrix
 
-
-# TODO ASK questions abut this
+@sklearnwrapper("manhattan")
+class ManhattanDistance(BaseDistance):
+    """Sklearn wrapper."""
 
 
 @dataclass
