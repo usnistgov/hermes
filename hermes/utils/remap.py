@@ -14,6 +14,8 @@ def _raise_not_sorted(name: str):
 
 
 def rescale_2d_data_linear(x1, y1, x2):
+    # Gilad: include "independent variable"
+    # Austin: rebinning
     # linear interopolation
     y2 = list()
     if min(x2) < min(x1):

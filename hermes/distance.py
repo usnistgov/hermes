@@ -38,10 +38,8 @@ class EuclidianDistance(BaseDistance):
     """Euclidian Distance. L2Norm."""
 
 
-"""
-From sklearn valid tp's are: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’, ‘manhattan’],
-From scipy valid tp's are: [‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, ‘mahalanobis’, ‘minkowski’, ‘rogerstanimoto’, ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’]
-"""
+# From sklearn valid tp"s are: ["cityblock", "cosine", "euclidean", "l1", "l2", "manhattan"],
+# From scipy valid tp's are: ["braycurtis", "canberra", "chebyshev", "correlation", "dice", "hamming", "jaccard", "kulsinski", "mahalanobis", "minkowski", "rogerstanimoto", "russellrao", "seuclidean", "sokalmichener", "sokalsneath", "sqeuclidean", "yule"]
 
 
 @sklearnwrapper("cosine")
@@ -64,8 +62,54 @@ class L2Distance(BaseDistance):
     """Sklearn wrapper."""
 
 
-@sklearnwrapper("manhattan")
-class ManhattanDistance(BaseDistance):
+_l = [
+    "braycurtis",
+    "canberra",
+    "chebyshev",
+    "correlation",
+    "dice",
+    "hamming",
+    "jaccard",
+    "kulsinski",
+    "mahalanobis",
+    "minkowski",
+    "rogerstanimoto",
+    "russellrao",
+    "seuclidean",
+    "sokalmichener",
+    "sokalsneath",
+    "sqeuclidean",
+    "yule",
+]
+
+
+@sklearnwrapper("braycurtis")
+class BrayCurtisDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+
+@sklearnwrapper("canberra")
+class CanberraDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+
+@sklearnwrapper("chebyshev")
+class ChebyshevDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+
+@sklearnwrapper("correlation")
+class CorrelationDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+
+@sklearnwrapper("dice")
+class DiceDistance(BaseDistance):
+    """Sklearn wrapper."""
+
+
+@sklearnwrapper("hamming")
+class HammingDistance(BaseDistance):
     """Sklearn wrapper."""
 
 
