@@ -60,6 +60,8 @@ class Cluster(Analysis):
     measurement_distance: np.ndarray = field(init=False)
     # similarity and distance type?
 
+    # TODO: only create class of train hgpc, hgpc classes can be private
+
     def set_measurement_similarity(
         self, type_: Type[BaseSimilarity], **kwargs
     ):  # type_ = type distance type as kwarg?

@@ -6,6 +6,13 @@ from hermes.distance import (
     CosineDistance,
     PNormDistance,
 )
+from hermes.clustering import (
+    Cluster,
+    SpectralClustering,
+    ContigousCommunityDiscovery,
+    ContiguousCluster,
+    ContiguousFixedKClustering,
+)
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
@@ -15,4 +22,9 @@ __all__ = [
     "EuclidianDistance",
     "CosineDistance",
     "PNormDistance",
+    "Cluster",
+    "SpectralClustering",
+    "ContigousCommunityDiscovery",
+    "ContiguousCluster",
+    "ContiguousFixedKClustering",
 ]
