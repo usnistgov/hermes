@@ -1,6 +1,24 @@
 # hermes
 
+## Installation
 
+We use `poetry` as our main package and dependency manager. We recommend using `poetry` to
+install `hermes`. To do so, clone this repo, navigate to the root directory and run `poetry install`.
+For instructions on how to install `poetry` see [here](https://python-poetry.org/docs/#installation)
+
+Alternatively, you can run `pip install .` inside the root directory to install `hermes`. *If your machine is
+macOS and ARM64 (M1, M2), this is the recommended method.*
+
+### Installing without cloning
+To install `hermes` without cloning this repository, run the following command:
+``` bash
+$ pip install git+ssh://git@github.com/cvelezrmc/hermes.git@scratchcv
+```
+or to run without SSH
+``` bash
+$ pip install git+https://<my_token>@github.com/cvelezrmc/hermes.git@scratchcv
+```
+where <my_token> is your personal access [GitHub Token](https://docs.github.com/en/enterprise-server@3.4/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
 ## goals
 
