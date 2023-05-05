@@ -4,8 +4,8 @@ from typing import Type, Optional
 
 import numpy as np
 
-from hermes.Base import BaseDataPipeline, BaseArchive
-from hermes.Base.analysis import Analysis
+from hermes.base import BaseDataPipeline, BaseArchive
+from hermes.base.analysis import Analysis
 from hermes.distance import BaseDistance
 from hermes.similarity import BaseSimilarity
 
