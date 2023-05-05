@@ -1,4 +1,4 @@
-from clustering import (
+from hermes.clustering import (
     Cluster,
     SpectralClustering,
     ContigousCommunityDiscovery,
