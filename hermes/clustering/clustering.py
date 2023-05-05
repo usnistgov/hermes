@@ -6,17 +6,22 @@ Created on Tue Sep 27 11:57:27 2022
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional
+from pydantic.dataclasses import dataclass as typesafedataclass
 
 import networkx as nx
 import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
-from hermes.schemas import PrivateAttr
+from hermes.distance import EuclideanDistance
+from hermes.utils import _default_ndarray
+
+# from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
-from hermes.similarity import BaseSimilarity
-from hermes.Base import Analysis
+
+# from hermes.similarity import BaseSimilarity
+from hermes.base import Analysis
 
 # class Distance_measures(Intrinsic_data_analysis):
 
@@ -32,70 +37,76 @@ class UnspecifiedType(Exception):
     pass
 
 
-BaseSimilarity = TypeVar("BaseSimilarity", bound=BaseSimilarity)
-BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
+# BaseSimilarity = TypeVar("BaseSimilarity", bound=BaseSimilarity)
+# BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
 
 
 def _compute_distance(
-    type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None
+    type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None, **kwargs
 ):
-    return type_.calculate(X, Y)  # type: ignore
+    return type_.calculate(X, Y, **kwargs)  # type: ignore
 
 
-def _default_ndarray():
-    return np.array(list())
+class _Config:
+    arbitrary_types_allowed = True
+    # validate_assignment = True
 
 
-@dataclass
+@typesafedataclass(config=_Config)
 class Cluster(Analysis):
     """Class for clustering algorithms."""
 
-    _similarity: PrivateAttr
-    _distance: PrivateAttr
     measurements: np.ndarray
-    locations: Optional[np.ndarray] = field(default_factory=_default_ndarray)
-    locations_similarity: np.ndarray = field(init=False)
-    locations_distance: np.ndarray = field(init=False)
-    measurement_similarity: np.ndarray = field(init=False)
-    measurement_distance: np.ndarray = field(init=False)
+    locations: np.ndarray = field(default_factory=_default_ndarray)
+    measurements_distance_type: BaseDistance = EuclideanDistance()
+    # measurements_similarity_type: Optional[BaseSimilarity]
+    locations_distance_type: BaseDistance = EuclideanDistance()
+    # locations_similarity_type: Optional[BaseSimilarity]
+    locations_similarity: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+    locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
+    measurements_distance: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+    measurements_similarity: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+
+    # TODO finish this to init with params below
+
+    def __setattr__(self, __name: str, __value: Any):
+        if __name == "locations_distance_type":
+            if not isinstance(__value, BaseDistance):
+                raise TypeError("invalid distance")
+            v = __value
+            v.X = self.locations
+            setattr(self, "locations_distance", v.calculate())  # type: ignore
+            return super().__setattr__(__name, v)
+
+        if __name == "measurements_distance_type":
+            if not isinstance(__value, BaseDistance):
+                raise TypeError("invalid distance")
+            v = __value
+            v.X = self.measurements  # type: ignore
+            setattr(self, "measurements_distance", v.calculate())  # type: ignore
+            return super().__setattr__(__name, v)
+
+        return super().__setattr__(__name, __value)
+
     # similarity and distance type?
+    def __post_init_post_parse__(self):
+        self.locations_distance_type.X = self.locations  # type: ignore
+        self.measurements_distance_type.X = self.measurements  # type: ignore
+        self.locations_distance = self.locations_distance_type.calculate()  # type: ignore
+        self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
+
+    def __repr__(self) -> str:
+        return f"Cluster(locations={self.locations.shape}, measurements={self.measurements.shape}, locations_distance_type={self.locations_distance_type}, measurements_distance_type={self.measurements_distance_type})"
 
     # TODO: only create class of train hgpc, hgpc classes can be private
 
-    def set_measurement_similarity(
-        self, type_: Type[BaseSimilarity], **kwargs
-    ):  # type_ = type distance type as kwarg?
-        assert issubclass(type_, BaseSimilarity), ValueError(
-            "Incorrect similarity type"
-        )
-        # add checks if type_ needs locations sim:
-        if type_._needs_locations:
-            self.set_locations_similarity()
-            pass
-        if not self.__distance:
-            raise UnspecifiedType("Please specify a distance type with `distance_type`")
-        self.set_distance(kwargs["distance_type"])
-        if self.__similarity:
-            return
-        self.__similarity.metric_type = type_
-        similarity = compute_similarity(
-            type_, self.measurements, self.measurements, **kwargs
-        )
-        # self.__similarity["set"]= True
-        self.measurement_similarity = similarity
-        return
-
     # make pairwise_metrics smart enough: type defines what is x and y
-    # parecido to above in similarity
-    def set_distance(self, type_: Type[BaseDistance], **kwargs):
-        assert issubclass(type_, BaseDistance), ValueError("Incorrect distance type")
-        if self.__distance:
-            return
-        self.__distance.metric_type = type_
-        distance = _compute_distance(type_, self.locations, self.measurements, **kwargs)
-        # self.__distance["set"]= True
-        self.measurement_distance = distance
-        return
 
     def get_global_membership_prob(
         self, cluster_labels: np.ndarray, v: float = 1.0, exclude_self: bool = False
@@ -114,7 +125,7 @@ class Cluster(Analysis):
             np.ones_like(self.measurement_similarity[:, :, np.newaxis])
             @ one_hot[:, np.newaxis, :]
         )
-        if exclude_self == True:
+        if exclude_self:
             # Identity matrix
             I = np.eye(cluster_labels.shape[0])
             # Block identity tensor
@@ -141,7 +152,23 @@ class Cluster(Analysis):
         return probabilities
 
 
-@dataclass
+# locations = np.array([[3, 4], [1, 2]])
+# measurements = np.array([2, 8])
+
+# distance = EuclideanDistance()
+
+# c = Cluster(
+#     locations=locations,
+#     locations_distance_type=distance,
+#     measurements=measurements,
+#     measurements_distance_type=distance,
+# )
+# refactor classes to take in params
+
+
+# To iniliza contiguous comm cluster
+# in: measurements, locations, measurement distance, meas similarity
+@typesafedataclass(config=_Config)
 class ContiguousCluster(Cluster):
     """Use this algorthim to cluster data in domains with a contigious constraint.
     Example domains where this applies: Phase regions in a phase diagram,
@@ -157,9 +184,6 @@ class ContiguousCluster(Cluster):
         contiguous constraint when cut.
         Assigns the measurement distance and similarity as edge attributes.
         Returns a networkx graph object."""
-
-        self.set_distance()  # call set distance
-        self.set_similarity()  # call set distance
 
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
@@ -221,10 +245,10 @@ class ContiguousCluster(Cluster):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurement_distance[j, k]}, name="Distance"
+                graph, {(j, k): self.measurements_distance[j, k]}, name="Distance"
             )
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurement_similarity[j, k]}, name="Weight"
+                graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
 
         return graph
@@ -279,7 +303,7 @@ class ContiguousCluster(Cluster):
         return probabilities
 
 
-@dataclass
+@typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
 
@@ -302,7 +326,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
         return labels
 
 
-@dataclass
+@typesafedataclass(config=_Config)
 class ContigousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
 

@@ -1,4 +1,6 @@
-from hermes.clustering import (
+"""Clustering operations/algorithms."""
+
+from .clustering import (
     Cluster,
     SpectralClustering,
     ContigousCommunityDiscovery,

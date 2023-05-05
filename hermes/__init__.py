@@ -2,7 +2,7 @@
 
 from hermes.distance import (
     BaseDistance,
-    EuclidianDistance,
+    EuclideanDistance,
     CosineDistance,
     PNormDistance,
 )
@@ -19,7 +19,7 @@ __email__ = "camilo.velezramirez@nist.gov"
 __version__ = "0.1.0"
 __all__ = [
     "BaseDistance",
-    "EuclidianDistance",
+    "EuclideanDistance",
     "CosineDistance",
     "PNormDistance",
     "Cluster",

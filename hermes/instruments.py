@@ -20,6 +20,9 @@ class EBSDModelsEnum(str, Enum):
     Homoscedastic = "Homoscedastic"
 
 
+# TODO: add simulation mode to all
+
+
 class DataWrangler:
     """Base class for data wranglers"""
 
