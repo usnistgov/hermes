@@ -16,7 +16,7 @@ from sklearn.cluster import SpectralClustering
 from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
 from hermes.similarity import BaseSimilarity
-from hermes.base import Analysis
+from hermes.Base import Analysis
 
 # class Distance_measures(Intrinsic_data_analysis):
 
