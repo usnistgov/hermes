@@ -13,7 +13,7 @@ from hermes.similarity import (
 from hermes.clustering import (
     Cluster,
     SpectralClustering,
-    ContigousCommunityDiscovery,
+    ContiguousCommunityDiscovery,
     ContiguousCluster,
     ContiguousFixedKClustering,
 )
@@ -30,7 +30,7 @@ __all__ = [
     "SquaredExponential",
     "Cluster",
     "SpectralClustering",
-    "ContigousCommunityDiscovery",
+    "ContiguousCommunityDiscovery",
     "ContiguousCluster",
     "ContiguousFixedKClustering",
 ]

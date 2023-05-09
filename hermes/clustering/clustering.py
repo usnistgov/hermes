@@ -203,6 +203,20 @@ class ContiguousCluster(Cluster):
     Locations of measurements are used to form a graph.
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
+    
+    graph: nx.Graph = field(init=False)  # TODO check if nx.Graph or nx.graph
+    labels: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+    probabilities: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+    
+    def __post_init__(self):
+        self.graph = self.form_graph(
+            self.measurement_similarity
+        )  # CQ is it similarity or distance? Waiting.
+
 
     def form_graph(self) -> nx.Graph:
         """Forms a graph based on the measurement locations
@@ -364,7 +378,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
 
 @typesafedataclass(config=_Config)
-class ContigousCommunityDiscovery(ContiguousCluster):
+class ContiguousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
 
     @classmethod
