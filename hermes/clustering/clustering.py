@@ -91,7 +91,7 @@ class Cluster(Analysis):
                 raise TypeError("invalid distance")
             v = __value
             v.distance_matrix = self.measurements_distance  # type: ignore
-            setattr(self, "measurements_distance", v.calculate())  # type: ignore
+            setattr(self, "measurements_similarity", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
         
         if __name == "locations_distance_type":
@@ -103,11 +103,11 @@ class Cluster(Analysis):
             return super().__setattr__(__name, v)
         
         if __name == "locations_similarity_type":
-            if not isinstance(__value, BaseDistance):
+            if not isinstance(__value, BaseSimilarity):
                 raise TypeError("invalid distance")
             v = __value
             v.distance_matrix = self.locations_distance
-            setattr(self, "locations_distance", v.calculate())  # type: ignore
+            setattr(self, "locations_similarity", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
 
 
