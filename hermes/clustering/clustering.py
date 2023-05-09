@@ -15,12 +15,13 @@ from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
 from hermes.distance import EuclideanDistance
+from hermes.similarity import SquaredExponential
 from hermes.utils import _default_ndarray
 
 # from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance
 
-# from hermes.similarity import BaseSimilarity
+from hermes.similarity import BaseSimilarity
 from hermes.base import Analysis
 
 # class Distance_measures(Intrinsic_data_analysis):
@@ -57,19 +58,20 @@ class Cluster(Analysis):
     """Class for clustering algorithms."""
 
     measurements: np.ndarray
-    locations: np.ndarray = field(default_factory=_default_ndarray)
     measurements_distance_type: BaseDistance = EuclideanDistance()
-    # measurements_similarity_type: Optional[BaseSimilarity]
-    locations_distance_type: BaseDistance = EuclideanDistance()
-    # locations_similarity_type: Optional[BaseSimilarity]
-    locations_similarity: np.ndarray = field(
-        init=False, default_factory=_default_ndarray, repr=False
-    )
-    locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
+    measurements_similarity_type: BaseSimilarity = SquaredExponential()
     measurements_distance: np.ndarray = field(
         init=False, default_factory=_default_ndarray, repr=False
     )
     measurements_similarity: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+
+    locations: np.ndarray = field(default_factory=_default_ndarray)
+    locations_distance_type: BaseDistance = EuclideanDistance()
+    locations_similarity_type: BaseSimilarity = SquaredExponential()
+    locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
+    locations_similarity: np.ndarray = field(
         init=False, default_factory=_default_ndarray, repr=False
     )
 
@@ -96,10 +98,12 @@ class Cluster(Analysis):
 
     # similarity and distance type?
     def __post_init_post_parse__(self):
-        self.locations_distance_type.X = self.locations  # type: ignore
         self.measurements_distance_type.X = self.measurements  # type: ignore
-        self.locations_distance = self.locations_distance_type.calculate()  # type: ignore
         self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
+
+        self.locations_distance_type.X = self.locations  # type: ignore
+        self.locations_distance = self.locations_distance_type.calculate()  # type: ignore
+        
 
     def __repr__(self) -> str:
         return f"Cluster(locations={self.locations.shape}, measurements={self.measurements.shape}, locations_distance_type={self.locations_distance_type}, measurements_distance_type={self.measurements_distance_type})"
