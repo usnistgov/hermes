@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from hermes.base import BaseDS
 
 import numpy as np
-
+from hermes.utils import _default_ndarray
 
 @dataclass
 class BaseSimilarity(BaseDS):
