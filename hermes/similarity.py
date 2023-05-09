@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from hermes.Base import BaseDS
+from hermes.base import BaseDS
 
 import numpy as np
 
