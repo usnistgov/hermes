@@ -195,7 +195,7 @@ class ContiguousCluster(Cluster):
             #check for near zero values in the z dimension  
             if np.std(self.locations[:, 2]) < 10e-6:
                 dims = 2
-            #TO DO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
+            #TODO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
             else:
                 dims = 3
         else:
