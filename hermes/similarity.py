@@ -16,10 +16,12 @@ class SquaredExponential(BaseSimilarity):
     """Convert distances to similarities by:
        sigma^2 * exp(-distance^2/(2*lengscale^2))"""
     
+    distance_matrix: np.ndarray = field(default_factory=_default_ndarray)
+
     #Default variance and lengthscales
     variance:float = 1.0
     lengthscale:float = 1.0
         
-    def calculate(cls, distance_matrix):
-        similarities = cls.variance * np.exp(-(distance_matrix/cls.lengthscale)**2)
+    def calculate(cls):
+        similarities = cls.variance * np.exp(-(cls.distance_matrix/cls.lengthscale)**2)
         return similarities

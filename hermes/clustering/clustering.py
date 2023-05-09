@@ -78,14 +78,6 @@ class Cluster(Analysis):
     # TODO finish this to init with params below
 
     def __setattr__(self, __name: str, __value: Any):
-        if __name == "locations_distance_type":
-            if not isinstance(__value, BaseDistance):
-                raise TypeError("invalid distance")
-            v = __value
-            v.X = self.locations
-            setattr(self, "locations_distance", v.calculate())  # type: ignore
-            return super().__setattr__(__name, v)
-
         if __name == "measurements_distance_type":
             if not isinstance(__value, BaseDistance):
                 raise TypeError("invalid distance")
@@ -93,6 +85,32 @@ class Cluster(Analysis):
             v.X = self.measurements  # type: ignore
             setattr(self, "measurements_distance", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
+        
+        if __name == "measurements_similarity_type":
+            if not isinstance(__value, BaseSimilarity):
+                raise TypeError("invalid distance")
+            v = __value
+            v.distance_matrix = self.measurements_distance  # type: ignore
+            setattr(self, "measurements_distance", v.calculate())  # type: ignore
+            return super().__setattr__(__name, v)
+        
+        if __name == "locations_distance_type":
+            if not isinstance(__value, BaseDistance):
+                raise TypeError("invalid distance")
+            v = __value
+            v.X = self.locations
+            setattr(self, "locations_distance", v.calculate())  # type: ignore
+            return super().__setattr__(__name, v)
+        
+        if __name == "locations_similarity_type":
+            if not isinstance(__value, BaseDistance):
+                raise TypeError("invalid distance")
+            v = __value
+            v.distance_matrix = self.locations_distance
+            setattr(self, "locations_distance", v.calculate())  # type: ignore
+            return super().__setattr__(__name, v)
+
+
 
         return super().__setattr__(__name, __value)
 
@@ -100,9 +118,13 @@ class Cluster(Analysis):
     def __post_init_post_parse__(self):
         self.measurements_distance_type.X = self.measurements  # type: ignore
         self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
+        self.measurements_similarity_type.distance_matrix = self.measurements_distance
+        self.measurements_similarity = self.measurements_similarity_type.calculate()
 
         self.locations_distance_type.X = self.locations  # type: ignore
-        self.locations_distance = self.locations_distance_type.calculate()  # type: ignore
+        self.locations_distance = self.locations_distance_type.calculate() # type: ignore
+        self.locations_similarity_type.distance_matrix = self.locations_distance
+        self.locations_similarity = self.locations_similarity_type.calculate() 
         
 
     def __repr__(self) -> str:
