@@ -6,6 +6,10 @@ from hermes.distance import (
     CosineDistance,
     PNormDistance,
 )
+from hermes.similarity import (
+    BaseSimilarity,
+    SquaredExponential,
+)
 from hermes.clustering import (
     Cluster,
     SpectralClustering,
@@ -22,6 +26,8 @@ __all__ = [
     "EuclideanDistance",
     "CosineDistance",
     "PNormDistance",
+    "BaseSimilarity",
+    "SquaredExponential",
     "Cluster",
     "SpectralClustering",
     "ContigousCommunityDiscovery",
