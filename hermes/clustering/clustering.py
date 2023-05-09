@@ -187,10 +187,21 @@ class ContiguousCluster(Cluster):
 
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
-        # Check if the data is all on the same layer:
-        is_2d = np.std(self.locations[:, 2]) < 10e-6
+        
+        # Check for dimensions of input:
+        if self.locations.shape[1] == 2:
+            dims = 2
+        elif self.locations.shape[1] == 3:
+            #check for near zero values in the z dimension  
+            if np.std(self.locations[:, 2]) < 10e-6:
+                dims = 2
+            #TO DO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
+            else:
+                dims = 3
+        else:
+            raise TypeError("Not implemented yet for number of dimensions")
 
-        if is_2d:
+        if dims == 2:
             tri = Delaunay(self.locations[:, 0:2], qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
@@ -203,7 +214,7 @@ class ContiguousCluster(Cluster):
                 adj_matrix[tri.simplices[i, 1], tri.simplices[i, 2]] = 1
                 adj_matrix[tri.simplices[i, 2], tri.simplices[i, 1]] = 1
 
-        else:
+        elif dims == 3:
             tri = Delaunay(self.locations, qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
