@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hermes.base import BaseDS
 
 import numpy as np
