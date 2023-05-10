@@ -212,10 +212,10 @@ class ContiguousCluster(Cluster):
         init=False, default_factory=_default_ndarray, repr=False
     )
     
-    def __post_init__(self):
-        self.graph = self.form_graph(
-            # self.measurements_similarity
-        )  # CQ is it similarity or distance? Waiting.
+    # def __post_init__(self):
+    #     self.graph = self.form_graph(
+    #         # self.measurements_similarity
+    #     )  # CQ is it similarity or distance? Waiting.
 
 
     def form_graph(self) -> nx.Graph:
