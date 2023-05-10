@@ -214,7 +214,7 @@ class ContiguousCluster(Cluster):
     
     def __post_init__(self):
         self.graph = self.form_graph(
-            self.measurements_similarity
+            # self.measurements_similarity
         )  # CQ is it similarity or distance? Waiting.
 
 
@@ -362,7 +362,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
     def __post_init__(self):
         self.graph = self.form_graph(
-            self.measurements_similarity
+            # self.measurements_similarity
         )  # CQ is it similarity or distance? Waiting.
 
     @classmethod
