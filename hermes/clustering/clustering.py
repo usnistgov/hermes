@@ -384,7 +384,7 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 
     @classmethod
     def rb_pots(cls, Graph, resolution):
-        labels = algorithms.rb_pots(Graph, weights="weight",
+        labels = algorithms.rb_pots(Graph, weights="Weight",
                                     resolution_parameter = resolution)
         return labels
 
