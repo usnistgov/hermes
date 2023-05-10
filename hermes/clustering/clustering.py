@@ -384,9 +384,17 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 
     @classmethod
     def rb_pots(cls, Graph, resolution):
-        labels = algorithms.rb_pots(Graph, weights="Weight",
+        clusters = algorithms.rb_pots(Graph, weights="Weight",
                                     resolution_parameter = resolution)
-        return labels
+        
+        #Label the graph with the clusters
+        for k in range(len(clusters.communities)):
+            K = clusters.communities[k]
+            for i in K:
+                nx.set_node_attributes(Graph, {i: k}, name='Labels')
+
+        labels = np.asarray(Graph.nodes.data(data='Labels'))[:,1]
+        return Graph, labels
 
     @classmethod
     def gl_expansion(cls):
