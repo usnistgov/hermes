@@ -10,6 +10,7 @@ from typing import Any, Optional
 from pydantic.dataclasses import dataclass as typesafedataclass
 
 import networkx as nx
+from cdlib import algorithms
 import numpy as np
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
@@ -382,10 +383,9 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
 
     @classmethod
-    def rb_pots(cls, locations, graph):
-        # take in the locations and measurements
-        # calculate the graph
-        # return the cluster labels and probabilities.
+    def rb_pots(cls, Graph, resolution):
+        labels = algorithms.rb_pots(Graph, weights="weight",
+                                    resolution_parameter = resolution)
         return labels
 
     @classmethod
