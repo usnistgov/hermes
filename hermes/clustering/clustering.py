@@ -148,7 +148,7 @@ class Cluster(Analysis):
         one_hot = cluster_labels.reshape(-1, 1) == clusters.reshape(1, -1)
         # n x n x clusters stack of one hot encoding
         stack = (
-            np.ones_like(self.measurement_similarity[:, :, np.newaxis])
+            np.ones_like(self.measurements_similarity[:, :, np.newaxis])
             @ one_hot[:, np.newaxis, :]
         )
         if exclude_self:
@@ -160,7 +160,7 @@ class Cluster(Analysis):
             stack -= I_s
 
         # n x n x clusters similarity tensor stack
-        sims = self.measurement_similarity[:, :, np.newaxis] @ np.ones(
+        sims = self.measurements_similarity[:, :, np.newaxis] @ np.ones(
             (1, 1, len(clusters))
         )
         # Block similarity tensor
@@ -214,7 +214,7 @@ class ContiguousCluster(Cluster):
     
     def __post_init__(self):
         self.graph = self.form_graph(
-            self.measurement_similarity
+            self.measurements_similarity
         )  # CQ is it similarity or distance? Waiting.
 
 
@@ -362,7 +362,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
     def __post_init__(self):
         self.graph = self.form_graph(
-            self.measurement_similarity
+            self.measurements_similarity
         )  # CQ is it similarity or distance? Waiting.
 
     @classmethod
