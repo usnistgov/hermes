@@ -3,7 +3,7 @@
 from .clustering import (
     Cluster,
     SpectralClustering,
-    ContigousCommunityDiscovery,
+    ContiguousCommunityDiscovery,
     ContiguousCluster,
     ContiguousFixedKClustering,
 )
