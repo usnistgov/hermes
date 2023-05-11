@@ -44,7 +44,6 @@ class EuclideanDistance(BaseDistance):
 
     X: np.ndarray = field(default_factory=_default_ndarray)
     Y: Optional[np.ndarray] = field(init=False, default=None)
-    _metric: str = "euclidean"
 
     def calculate(self):
         """Calculate Euclidean Distance."""
@@ -64,7 +63,6 @@ class CosineDistance(BaseDistance):
 
     X: np.ndarray = field(default_factory=_default_ndarray)
     Y: Optional[np.ndarray] = field(init=False, default=None)
-    _metric: str = "cosine"
 
     def calculate(self):
         """Calculate Cosine Distance."""
