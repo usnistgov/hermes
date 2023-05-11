@@ -77,7 +77,8 @@ class Cluster(Analysis):
     )
 
     # TODO finish this to init with params below
-
+    '''Automactically re-calculate all the distances and similarities when the atributes are set.
+    This prevents miss-labeling the distances when the type is changed after the initial calcuation.'''
     def __setattr__(self, __name: str, __value: Any):
         if __name == "measurements_distance_type":
             if not isinstance(__value, BaseDistance):
@@ -115,7 +116,7 @@ class Cluster(Analysis):
 
         return super().__setattr__(__name, __value)
 
-    # similarity and distance type?
+    # Can we remove all of the __post_init_post_parse__???
     def __post_init_post_parse__(self):
         self.measurements_distance_type.X = self.measurements  # type: ignore
         self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
@@ -359,6 +360,8 @@ class ContiguousCluster(Cluster):
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
 
+    K: int # Number of clusters
+
     graph: nx.Graph = field(init=False)  # TODO check if nx.Graph or nx.graph
 
     def __post_init__(self):
@@ -382,8 +385,13 @@ class ContiguousFixedKClustering(ContiguousCluster):
 class ContiguousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
 
-    @classmethod
-    def rb_pots(cls, Graph, resolution):
+class RBPots(ContiguousCommunityDiscovery):
+
+    self.resolution: float
+
+    def cluster(self):
+        G = self.Graph
+        res = self.resolution
         #Cluster with RB Pots Algorithm 
         clusters = algorithms.rb_pots(Graph, weights="Weight",
                                     resolution_parameter = resolution)
@@ -394,28 +402,42 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
             for i in K:
                 nx.set_node_attributes(Graph, {i: k}, name='Labels')
         #Extract the labels
-        labels = np.asarray(Graph.nodes.data(data='Labels'))[:,1]
+        self.labels = np.asarray(Graph.nodes.data(data='Labels'))[:,1]
 
-        #Return the updated graph and the labels
-        return Graph, labels
+#     @classmethod
+#     def rb_pots(cls, Graph, resolution):
+#         #Cluster with RB Pots Algorithm 
+#         clusters = algorithms.rb_pots(Graph, weights="Weight",
+#                                     resolution_parameter = resolution)
+        
+#         #Label the graph with the clusters
+#         for k in range(len(clusters.communities)):
+#             K = clusters.communities[k]
+#             for i in K:
+#                 nx.set_node_attributes(Graph, {i: k}, name='Labels')
+#         #Extract the labels
+#         labels = np.asarray(Graph.nodes.data(data='Labels'))[:,1]
 
-    @classmethod
-    def gl_expansion(cls):
-        return labels
+#         #Return the updated graph and the labels
+#         return Graph, labels
 
-    @classmethod
-    def iteritative_fixed_k(cls, locations, graph):
-        """Call a fixed k clustering method iteratively
-        using the Gap Statisic method to choose K."""
+#     @classmethod
+#     def gl_expansion(cls):
+#         return labels
+
+#     @classmethod
+#     def iteritative_fixed_k(cls, locations, graph):
+#         """Call a fixed k clustering method iteratively
+#         using the Gap Statisic method to choose K."""
 
 
-class test(Cluster):
-    """Testing"""
+# class test(Cluster):
+#     """Testing"""
 
-    def __init__(self):
-        # self
-        pass
+#     def __init__(self):
+#         # self
+#         pass
 
-    @classmethod
-    def test(cls):
-        print("Success!")
+#     @classmethod
+#     def test(cls):
+#         print("Success!")

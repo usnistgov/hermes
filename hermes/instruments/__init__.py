@@ -1,5 +1,4 @@
 """Instruments"""
-
 from .instruments import (
     Instrument,
     Diffractometer,
@@ -13,3 +12,4 @@ __all__ = [
     "Powder_Diffractometer",
     "CHESS_QM2_Beamline",
 ]
+

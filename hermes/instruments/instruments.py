@@ -65,17 +65,20 @@ class Powder_Diffractometer(Diffractometer):
         measurements = self.xrd_measurements.iloc[indexes,:].to_numpy()
         return measurements
     
-    def sim_get_wafer_coords(self):
+    @property
+    def sim_wafer_coords(self):
         """Get all of the possible coordinates of the sample"""
         return self.xy_locations.to_numpy()
     
-    def sim_get_composition_domain(self):
+    @property
+    def sim_composition_domain(self):
         """Get the entire domain in composition space."""
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
     
-    def sim_get_2theta_space(self):
+    @property
+    def sim_two_theta_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
@@ -112,18 +115,21 @@ class CHESS_QM2_Beamline(Powder_Diffractometer):
                 #Concatenate measurements
         
         return measurements
-     
-    def get_wafer_coords(self):
+    
+    @property
+    def wafer_coords(self):
         """Get all of the possible coordinates of the sample"""
         return self.xy_locations.to_numpy()
     
-    def get_composition_domain(self):
+    @property
+    def composition_domain(self):
         """Get the entire domain in composition space."""
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
     
-    def get_2theta_space(self):
+    @property
+    def two_theta_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
