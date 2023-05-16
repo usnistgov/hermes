@@ -304,7 +304,7 @@ class ContiguousCluster(Cluster):
                 graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
 
-        return graph
+        self.graph = graph
 
     def get_local_membership_prob(
         self, graph: nx.Graph, cluster_labels: np.ndarray, v: float = 1.0
@@ -392,7 +392,7 @@ class RBPots(ContiguousCommunityDiscovery):
     resolution: float = field(init=False)
 
     def cluster(self):
-        G = self.Graph
+        G = self.graph
         res = self.resolution
         #Cluster with RB Pots Algorithm 
         clusters = algorithms.rb_pots(G, weights="Weight",
