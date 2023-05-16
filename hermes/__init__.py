@@ -24,7 +24,7 @@ from . import clustering
 from . import distance
 from . import instruments
 from . import pipelines
-from . import schemas
+# from . import schemas
 from . import similarity
 from . import utils
 
@@ -41,7 +41,7 @@ __all__ = ["archive",
            "distance"
            "instruments",
            "pipelines",
-           "schemas",
+        #    "schemas",
            "similarity",
            "utils"]
 # __all__ = [
