@@ -388,22 +388,23 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 
 class RBPots(ContiguousCommunityDiscovery):
 
-    self.resolution: float
+
+    resolution: float = field(init=False)
 
     def cluster(self):
         G = self.Graph
         res = self.resolution
         #Cluster with RB Pots Algorithm 
-        clusters = algorithms.rb_pots(Graph, weights="Weight",
-                                    resolution_parameter = resolution)
+        clusters = algorithms.rb_pots(G, weights="Weight",
+                                    resolution_parameter = res)
         
         #Label the graph with the clusters
         for k in range(len(clusters.communities)):
             K = clusters.communities[k]
             for i in K:
-                nx.set_node_attributes(Graph, {i: k}, name='Labels')
+                nx.set_node_attributes(G, {i: k}, name='Labels')
         #Extract the labels
-        self.labels = np.asarray(Graph.nodes.data(data='Labels'))[:,1]
+        self.labels = np.asarray(G.nodes.data(data='Labels'))[:,1]
 
 #     @classmethod
 #     def rb_pots(cls, Graph, resolution):
