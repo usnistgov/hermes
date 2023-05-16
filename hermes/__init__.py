@@ -17,10 +17,14 @@
 #     ContiguousCluster,
 #     ContiguousFixedKClustering,
 # )
+from . import distance
+
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
 __version__ = "0.1.0"
+
+__all__ = ["distance"]
 # __all__ = [
 #     "BaseDistance",
 #     "EuclideanDistance",
