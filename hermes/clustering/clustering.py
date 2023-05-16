@@ -359,8 +359,9 @@ class ContiguousCluster(Cluster):
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
-
-    K: int # Number of clusters
+    
+    # Number of clusters
+    K: int = field(init=False)
 
     graph: nx.Graph = field(init=False)  # TODO check if nx.Graph or nx.graph
 
