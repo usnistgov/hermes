@@ -389,7 +389,7 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 class RBPots(ContiguousCommunityDiscovery):
 
 
-    resolution: float = field(init=False)
+    resolution: float = 0.2
 
     def cluster(self):
         G = self.graph
