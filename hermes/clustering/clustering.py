@@ -137,12 +137,13 @@ class Cluster(Analysis):
     # make pairwise_metrics smart enough: type defines what is x and y
 
     def get_global_membership_prob(
-        self, cluster_labels: np.ndarray, v: float = 1.0, exclude_self: bool = False
+        self, v: float = 1.0, exclude_self: bool = False
     ):
         """Get the probability of each measurement beloning to each cluster."""
 
-        # cluster_labels is an array of the labels for each measurement.
+        cluster_labels = self.labels
         # v is a parameter that adjusts the strentgh of the partitioning with the similarities
+        # exlude_self is a flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to. 
 
         # Find the clusters
         clusters, counts = np.unique(cluster_labels, return_counts=True)
@@ -177,7 +178,8 @@ class Cluster(Analysis):
         sum_cluster_sim = np.sum(ave_cluster_sim**v, axis=1).reshape(-1, 1)
         # Convert cluster similarities to probaiblities
         probabilities = ave_cluster_sim**v / sum_cluster_sim
-        return probabilities
+        
+        self.probabilities = probabilities
 
 
 # locations = np.array([[3, 4], [1, 2]])
@@ -307,7 +309,7 @@ class ContiguousCluster(Cluster):
         self.graph = graph
 
     def get_local_membership_prob(
-        self, graph: nx.Graph, cluster_labels: np.ndarray, v: float = 1.0
+        self, v: float = 1.0
     ):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
@@ -317,6 +319,8 @@ class ContiguousCluster(Cluster):
         of each node for each label.
         Each label will be that row number, each node will be that column number.
         """
+        cluster_labels = self.labels
+        graph = self.graph
 
         max_labels = np.max(cluster_labels) + 1
         max_nodes = len(cluster_labels)
@@ -353,7 +357,7 @@ class ContiguousCluster(Cluster):
         )  # sum of similarities across the clusters for each node.
         probability_matrix = np.nan_to_num(average_similarity_matrix**v / node_sum, 0)
         probabilities = probability_matrix.T
-        return probabilities
+        self.probabilities = probabilities
 
 
 @typesafedataclass(config=_Config)
