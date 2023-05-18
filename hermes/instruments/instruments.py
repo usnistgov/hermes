@@ -156,5 +156,14 @@ class CHESS_QM2_Beamline(Powder_Diffractometer):
         """Get the 2Theta values of the XRD measurements in degrees"""
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
-        
     
+    # @property
+    # def q_space(self):
+    #     lambda = self.wavelength
+    #     #some conversion here
+
+    #     return q
+        
+    # @dataclass
+    # class BrukerD8(PowderDiffractometer):
+    #     #something
