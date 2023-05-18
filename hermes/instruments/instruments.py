@@ -82,7 +82,30 @@ class Powder_Diffractometer(Diffractometer):
         """Get the 2Theta values of the XRD measurements in degrees"""
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
+
+    @property
+    def compositions_2d(self):
+        """Converting the compostions from the 3D simplex to a 2D triangle
+        NOTE: the triangle is smaller than the simplex by a factor of sqrt(2)."""
+        #In 3D space
+        A_3d = np.array([1, 0, 0])
+        B_3d = np.array([0, 1, 0])
+        C_3d = np.array([0, 0, 1])
+
+        #In 2D space
+        A_2d = np.array([0, 0])# A at the origin
+        B_2d = np.array([1, 0])# B at the x-axis = 1 point
+        C_2d = np.array([0.5, 0.5*np.sqrt(3)]) # C at the top of an equilateral triangle with the base along x of length 1.
         
+        points = self.compositions #Read in the 3D compostions
+        #Multiply 2D coordinates with the compositions for each component 
+        points_A = points[:,0].reshape(-1,1)*A_2d.reshape(1,-1)
+        points_B = points[:,1].reshape(-1,1)*B_2d.reshape(1,-1)
+        points_C = points[:,2].reshape(-1,1)*C_2d.reshape(1,-1)
+        #Sum the coordinates for each component
+        points_2d = points_A + points_B + points_C
+        
+        return points_2d
         
     
     
