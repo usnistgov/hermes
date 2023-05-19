@@ -1,6 +1,6 @@
 """Distances"""
 
-from .distance import (
+from ._distance import (
     BaseDistance,
     EuclideanDistance,
     CosineDistance,

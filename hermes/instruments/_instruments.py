@@ -1,6 +1,8 @@
+"""Instrument classes."""
+from dataclasses import dataclass, field
+
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass
 
 
 @dataclass
@@ -29,6 +31,8 @@ class PowderDiffractometer(Diffractometer):
     wafer_xrd_file: str
 
     xy_locations: pd.DataFrame = field(init=False)
+    compositions: pd.DataFrame = field(init=False)
+    xrd_measurements: pd.DataFrame = field(init=False)
 
     def load_sim_data(self):
         """Load simulated data."""
@@ -114,7 +118,9 @@ class CHESSQM2Beamline(PowderDiffractometer):
         self.compositions = pd.read_table(
             self.wafer_directory + self.wafer_composition_file
         )
-        self.xrd_measurements = pd.read_table(self.sim_load_dir + self.wafer_xrd_file)
+        self.xrd_measurements = pd.read_table(
+            self.wafer_directory + self.wafer_xrd_file
+        )
 
     def move_and_measure(self, compositions_locations):
         """Move (in composition-space) to new locations
@@ -124,7 +130,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
             measurements = self.simulated_move_and_measure(compositions_locations)
 
         else:
-            print("not implemented yet")
+            raise NotImplementedError
 
             # Convert compostion to wafer coordinates
             # For each location:

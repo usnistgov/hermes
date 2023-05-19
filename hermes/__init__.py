@@ -7,7 +7,6 @@ from . import distance
 from . import instruments
 from . import pipelines
 
-# from . import schemas
 from . import similarity
 from . import utils
 
@@ -24,7 +23,6 @@ __all__ = [
     "distance",
     "instruments",
     "pipelines",
-    #    "schemas",
     "similarity",
     "utils",
 ]

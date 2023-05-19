@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, E0401, E0611
 """
 Created on Tue Sep 27 11:57:27 2022
 
@@ -7,23 +8,20 @@ Created on Tue Sep 27 11:57:27 2022
 
 from dataclasses import dataclass, field
 from typing import Any, Optional
-from pydantic.dataclasses import dataclass as typesafedataclass
 
 import networkx as nx
-from cdlib import algorithms
 import numpy as np
+from cdlib import algorithms
+from pydantic.dataclasses import dataclass as typesafedataclass
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
-from hermes.distance import EuclideanDistance
-from hermes.similarity import SquaredExponential
-from hermes.utils import _default_ndarray
+from hermes.base import Analysis
 
 # from hermes.schemas import PrivateAttr
-from hermes.distance import BaseDistance
-
-from hermes.similarity import BaseSimilarity
-from hermes.base import Analysis
+from hermes.distance import BaseDistance, EuclideanDistance
+from hermes.similarity import BaseSimilarity, SquaredExponential
+from hermes.utils import _default_ndarray
 
 # class Distance_measures(Intrinsic_data_analysis):
 
@@ -361,8 +359,11 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
     @classmethod
     def spectral(cls, graph: nx.Graph, n_clusters: int, **kwargs):
-        matrix = nx.adjacency_matrix(graph, weight="Weight")
-        affinity = matrix.toarray()
+        """Spectral Clustering."""
+        # matrix = nx.adjacency_matrix(graph, weight="Weight")  # type: ignore
+        # affinity = matrix.toarray()
+        affinity = nx.to_numpy_array(graph, weight="Weight")  # type: ignore
+        # Q?
 
         clusters = SpectralClustering(n_clusters, affinity="precomputed", **kwargs).fit(
             affinity
@@ -375,6 +376,7 @@ class RBPots(ContiguousCommunityDiscovery):
     resolution: float = 0.2
 
     def cluster(self):
+        """Cluster the graph using the RB Pots algorithm."""
         G = self.graph
         res = self.resolution
         # Cluster with RB Pots Algorithm
