@@ -195,6 +195,7 @@ class ContiguousCluster(Cluster):
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
 
+
     def form_graph(self) -> nx.Graph:
         """Forms a graph based on the measurement locations
         using a Delauny Triangulation. This type of graph will preserve the
@@ -329,11 +330,35 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
 
 
+    # @classmethod
+    # def gl_expansion(cls):
+    #     return labels
+
+    
+class IteritativeFixedK(ContiguousCommunityDiscovery):
+        """Call a fixed k clustering method iteratively
+        using the Gap Statisic method to choose K."""
+
+        method: ContiguousFixedKClustering
+        min_K: int = 1
+        max_K: int = 10
+
+        def cluster(self)
+
+
+            G = self.graph
+
+            K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+
+            labels = self.method(K)
+
+
+
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
-
     K: int = 2
+    # graph: nx.Graph = field(init=False)
 
     def __post_init__(self):
         # self.graph = self.form_graph(
@@ -341,8 +366,9 @@ class ContiguousFixedKClustering(ContiguousCluster):
         # )  # CQ is it similarity or distance? Waiting.
         self.graph = self.form_graph()
 
-    @classmethod
-    def spectral(cls, graph: nx.Graph, n_clusters: int, **kwargs):
+class Spectral(ContiguousFixedKClustering)
+    
+    def cluster(cls, graph: nx.Graph, n_clusters: int, **kwargs):
         """Spectral Clustering."""
         # matrix = nx.adjacency_matrix(graph, weight="Weight")  # type: ignore
         # affinity = matrix.toarray()
