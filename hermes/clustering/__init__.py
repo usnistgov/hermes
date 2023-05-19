@@ -1,11 +1,11 @@
 """Clustering operations/algorithms."""
 
-from .clustering import (
+from ._clustering import (
     Cluster,
     ContiguousCluster,
     ContiguousFixedKClustering,
     ContiguousCommunityDiscovery,
-    RBPots
+    RBPots,
 )
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "ContiguousCluster",
     "ContiguousFixedKClustering",
     "ContigousCommunityDiscovery",
-    "RBPots"
+    "RBPots",
 ]
