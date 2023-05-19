@@ -1,22 +1,4 @@
 """Top-level package for Hermes Python."""
-
-# from hermes.distance import (
-#     BaseDistance,
-#     EuclideanDistance,
-#     CosineDistance,
-#     PNormDistance,
-# )
-# from hermes.similarity import (
-#     BaseSimilarity,
-#     SquaredExponential,
-# )
-# from hermes.clustering import (
-#     Cluster,
-#     SpectralClustering,
-#     ContiguousCommunityDiscovery,
-#     ContiguousCluster,
-#     ContiguousFixedKClustering,
-# )
 from . import archive
 from . import base
 from . import classification
@@ -46,16 +28,3 @@ __all__ = [
     "similarity",
     "utils",
 ]
-# __all__ = [
-#     "BaseDistance",
-#     "EuclideanDistance",
-#     "CosineDistance",
-#     "PNormDistance",
-#     "BaseSimilarity",
-#     "SquaredExponential",
-#     "Cluster",
-#     "SpectralClustering",
-#     "ContiguousCommunityDiscovery",
-#     "ContiguousCluster",
-#     "ContiguousFixedKClustering",
-# ]

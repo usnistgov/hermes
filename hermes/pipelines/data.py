@@ -1,6 +1,7 @@
+# pylint: disable=R0913
 """Definition of Data Pipeline Class."""
 from dataclasses import dataclass
-from typing import Type, Optional
+from typing import Type
 
 import numpy as np
 

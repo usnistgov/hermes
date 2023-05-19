@@ -49,7 +49,7 @@ def _compute_distance(
     return type_.calculate(X, Y, **kwargs)  # type: ignore
 
 
-class _Config:
+class _Config:  # pylint: disable=too-few-public-methods
     arbitrary_types_allowed = True
     # validate_assignment = True
 
@@ -76,9 +76,9 @@ class Cluster(Analysis):
         init=False, default_factory=_default_ndarray, repr=False
     )
 
-    # TODO finish this to init with params below
-    '''Automactically re-calculate all the distances and similarities when the atributes are set.
-    This prevents miss-labeling the distances when the type is changed after the initial calcuation.'''
+    """Automatically re-calculate all the distances and similarities when the atributes are set.
+    This prevents miss-labeling the distances when the type is changed after the initial calcuation."""
+
     def __setattr__(self, __name: str, __value: Any):
         if __name == "measurements_distance_type":
             if not isinstance(__value, BaseDistance):
@@ -87,7 +87,7 @@ class Cluster(Analysis):
             v.X = self.measurements  # type: ignore
             setattr(self, "measurements_distance", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
-        
+
         if __name == "measurements_similarity_type":
             if not isinstance(__value, BaseSimilarity):
                 raise TypeError("invalid distance")
@@ -95,7 +95,7 @@ class Cluster(Analysis):
             v.distance_matrix = self.measurements_distance  # type: ignore
             setattr(self, "measurements_similarity", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
-        
+
         if __name == "locations_distance_type":
             if not isinstance(__value, BaseDistance):
                 raise TypeError("invalid distance")
@@ -103,7 +103,7 @@ class Cluster(Analysis):
             v.X = self.locations
             setattr(self, "locations_distance", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
-        
+
         if __name == "locations_similarity_type":
             if not isinstance(__value, BaseSimilarity):
                 raise TypeError("invalid distance")
@@ -111,8 +111,6 @@ class Cluster(Analysis):
             v.distance_matrix = self.locations_distance
             setattr(self, "locations_similarity", v.calculate())  # type: ignore
             return super().__setattr__(__name, v)
-
-
 
         return super().__setattr__(__name, __value)
 
@@ -124,10 +122,9 @@ class Cluster(Analysis):
         self.measurements_similarity = self.measurements_similarity_type.calculate()
 
         self.locations_distance_type.X = self.locations  # type: ignore
-        self.locations_distance = self.locations_distance_type.calculate() # type: ignore
+        self.locations_distance = self.locations_distance_type.calculate()  # type: ignore
         self.locations_similarity_type.distance_matrix = self.locations_distance
-        self.locations_similarity = self.locations_similarity_type.calculate() 
-        
+        self.locations_similarity = self.locations_similarity_type.calculate()
 
     def __repr__(self) -> str:
         return f"Cluster(locations={self.locations.shape}, measurements={self.measurements.shape}, locations_distance_type={self.locations_distance_type}, measurements_distance_type={self.measurements_distance_type})"
@@ -136,14 +133,12 @@ class Cluster(Analysis):
 
     # make pairwise_metrics smart enough: type defines what is x and y
 
-    def get_global_membership_prob(
-        self, v: float = 1.0, exclude_self: bool = False
-    ):
+    def get_global_membership_prob(self, v: float = 1.0, exclude_self: bool = False):
         """Get the probability of each measurement beloning to each cluster."""
 
         cluster_labels = self.labels
         # v is a parameter that adjusts the strentgh of the partitioning with the similarities
-        # exlude_self is a flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to. 
+        # exlude_self is a flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to.
 
         # Find the clusters
         clusters, counts = np.unique(cluster_labels, return_counts=True)
@@ -178,7 +173,7 @@ class Cluster(Analysis):
         sum_cluster_sim = np.sum(ave_cluster_sim**v, axis=1).reshape(-1, 1)
         # Convert cluster similarities to probaiblities
         probabilities = ave_cluster_sim**v / sum_cluster_sim
-        
+
         self.probabilities = probabilities
 
 
@@ -187,40 +182,21 @@ class Cluster(Analysis):
 
 # distance = EuclideanDistance()
 
+
 # c = Cluster(
 #     locations=locations,
 #     locations_distance_type=distance,
 #     measurements=measurements,
 #     measurements_distance_type=distance,
 # )
-# refactor classes to take in params
-
-
-# To iniliza contiguous comm cluster
-# in: measurements, locations, measurement distance, meas similarity
 @typesafedataclass(config=_Config)
 class ContiguousCluster(Cluster):
     """Use this algorthim to cluster data in domains with a contigious constraint.
     Example domains where this applies: Phase regions in a phase diagram,
     grains in a micrograph, etc.
-
     Locations of measurements are used to form a graph.
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
-    
-    # graph: nx.Graph = field(init=False)  # TODO check if nx.Graph or nx.graph
-    # labels: np.ndarray = field(
-    #     init=False, default_factory=_default_ndarray, repr=False
-    # )
-    # probabilities: np.ndarray = field(
-    #     init=False, default_factory=_default_ndarray, repr=False
-    # )
-    
-    # def __post_init__(self):
-    #     self.graph = self.form_graph(
-    #         # self.measurements_similarity
-    #     )  # CQ is it similarity or distance? Waiting.
-
 
     def form_graph(self) -> nx.Graph:
         """Forms a graph based on the measurement locations
@@ -229,23 +205,15 @@ class ContiguousCluster(Cluster):
         Assigns the measurement distance and similarity as edge attributes.
         Returns a networkx graph object."""
 
+        #         self.set_distance()  # call set distance
+        #         self.set_similarity()  # call set distance
+
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
-        
-        # Check for dimensions of input:
-        if self.locations.shape[1] == 2:
-            dims = 2
-        elif self.locations.shape[1] == 3:
-            #check for near zero values in the z dimension  
-            if np.std(self.locations[:, 2]) < 10e-6:
-                dims = 2
-            #TODO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
-            else:
-                dims = 3
-        else:
-            raise TypeError("Not implemented yet for number of dimensions")
+        # Check if the data is all on the same layer:
+        is_2d = np.std(self.locations[:, 2]) < 10e-6
 
-        if dims == 2:
+        if is_2d:
             tri = Delaunay(self.locations[:, 0:2], qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
@@ -258,7 +226,7 @@ class ContiguousCluster(Cluster):
                 adj_matrix[tri.simplices[i, 1], tri.simplices[i, 2]] = 1
                 adj_matrix[tri.simplices[i, 2], tri.simplices[i, 1]] = 1
 
-        elif dims == 3:
+        else:
             tri = Delaunay(self.locations, qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
@@ -300,16 +268,16 @@ class ContiguousCluster(Cluster):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurements_distance[j, k]}, name="Distance"
+                graph, {(j, k): self.measurement_distance[j, k]}, name="Distance"
             )
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
+                graph, {(j, k): self.measurement_similarity[j, k]}, name="Weight"
             )
 
-        self.graph = graph
+        return graph
 
     def get_local_membership_prob(
-        self, v: float = 1.0
+        self, graph: nx.Graph, cluster_labels: np.ndarray, v: float = 1.0
     ):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
@@ -319,8 +287,6 @@ class ContiguousCluster(Cluster):
         of each node for each label.
         Each label will be that row number, each node will be that column number.
         """
-        cluster_labels = self.labels
-        graph = self.graph
 
         max_labels = np.max(cluster_labels) + 1
         max_nodes = len(cluster_labels)
@@ -348,7 +314,7 @@ class ContiguousCluster(Cluster):
 
         # Find the average distance and similarity
         # of each node to its nieghboring labels:
-        average_distance_matrix = cumulative_distance_maxtrix / connection_matrix
+        # average_distance_matrix = cumulative_distance_maxtrix / connection_matrix
         average_similarity_matrix = cumulative_similarity_maxtrix / connection_matrix
 
         # Convert the average similarities to probabilities
@@ -357,22 +323,41 @@ class ContiguousCluster(Cluster):
         )  # sum of similarities across the clusters for each node.
         probability_matrix = np.nan_to_num(average_similarity_matrix**v / node_sum, 0)
         probabilities = probability_matrix.T
-        self.probabilities = probabilities
+        return probabilities
+
+
+@typesafedataclass(config=_Config)
+class ContiguousCommunityDiscovery(ContiguousCluster):
+    """Use these algorithms when the number of clusters is not known."""
+
+    @classmethod
+    def rb_pots(cls, locations, graph):
+        # take in the locations and measurements
+        # calculate the graph
+        # return the cluster labels and probabilities.
+        return labels
+
+    @classmethod
+    def gl_expansion(cls):
+        return labels
+
+    @classmethod
+    def iteritative_fixed_k(cls, locations, graph):
+        """Call a fixed k clustering method iteratively
+        using the Gap Statisic method to choose K."""
 
 
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
-    
-    # Number of clusters
-    K: int = field(init=False)
 
-    graph: nx.Graph = field(init=False)  # TODO check if nx.Graph or nx.graph
+    graph: nx.Graph = field(init=False)
 
     def __post_init__(self):
-        self.graph = self.form_graph(
-            # self.measurements_similarity
-        )  # CQ is it similarity or distance? Waiting.
+        # self.graph = self.form_graph(
+        #     self.measurement_similarity
+        # )  # CQ is it similarity or distance? Waiting.
+        self.graph = self.form_graph()
 
     @classmethod
     def spectral(cls, graph: nx.Graph, n_clusters: int, **kwargs):
@@ -386,36 +371,30 @@ class ContiguousFixedKClustering(ContiguousCluster):
         return labels
 
 
-@typesafedataclass(config=_Config)
-class ContiguousCommunityDiscovery(ContiguousCluster):
-    """Use these algorithms when the number of clusters is not known."""
-
 class RBPots(ContiguousCommunityDiscovery):
-
-
     resolution: float = 0.2
 
     def cluster(self):
         G = self.graph
         res = self.resolution
-        #Cluster with RB Pots Algorithm 
-        clusters = algorithms.rb_pots(G, weights="Weight",
-                                    resolution_parameter = res)
-        
-        #Label the graph with the clusters
+        # Cluster with RB Pots Algorithm
+        clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
+
+        # Label the graph with the clusters
         for k in range(len(clusters.communities)):
             K = clusters.communities[k]
             for i in K:
-                nx.set_node_attributes(G, {i: k}, name='Labels')
-        #Extract the labels
-        self.labels = np.asarray(G.nodes.data(data='Labels'))[:,1]
+                nx.set_node_attributes(G, {i: k}, name="Labels")
+        # Extract the labels
+        self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+
 
 #     @classmethod
 #     def rb_pots(cls, Graph, resolution):
-#         #Cluster with RB Pots Algorithm 
+#         #Cluster with RB Pots Algorithm
 #         clusters = algorithms.rb_pots(Graph, weights="Weight",
 #                                     resolution_parameter = resolution)
-        
+
 #         #Label the graph with the clusters
 #         for k in range(len(clusters.communities)):
 #             K = clusters.communities[k]

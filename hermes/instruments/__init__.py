@@ -2,14 +2,13 @@
 from .instruments import (
     Instrument,
     Diffractometer,
-    Powder_Diffractometer,
-    CHESS_QM2_Beamline,
+    PowderDiffractometer,
+    CHESSQM2Beamline,
 )
 
 __all__ = [
     "Instrument",
     "Diffractometer",
-    "Powder_Diffractometer",
-    "CHESS_QM2_Beamline",
+    "PowderDiffractometer",
+    "CHESSQM2Beamline",
 ]
-
