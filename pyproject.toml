@@ -9,6 +9,7 @@ authors = [
 ]
 description = "Flexible materials modeling and lab automation"
 name = "hermes"
+packages = [{include = "hermes"}]
 version = "0.1.0"
 
 [tool.poetry.dependencies]
