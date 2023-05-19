@@ -1,5 +1,5 @@
 """Instruments"""
-from .instruments import (
+from ._instruments import (
     Instrument,
     Diffractometer,
     PowderDiffractometer,

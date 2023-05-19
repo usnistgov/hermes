@@ -1,6 +1,6 @@
 """Similarities"""
 
-from .similarity import (
+from ._similarity import (
     BaseSimilarity,
     SquaredExponential,
 )

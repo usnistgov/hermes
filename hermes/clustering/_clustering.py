@@ -112,7 +112,6 @@ class Cluster(Analysis):
 
         return super().__setattr__(__name, __value)
 
-    # Can we remove all of the __post_init_post_parse__???
     def __post_init_post_parse__(self):
         self.measurements_distance_type.X = self.measurements  # type: ignore
         self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
@@ -324,32 +323,17 @@ class ContiguousCluster(Cluster):
         return probabilities
 
 
+# TODO look for better docstrings for children
 @typesafedataclass(config=_Config)
 class ContiguousCommunityDiscovery(ContiguousCluster):
     """Use these algorithms when the number of clusters is not known."""
-
-    @classmethod
-    def rb_pots(cls, locations, graph):
-        # take in the locations and measurements
-        # calculate the graph
-        # return the cluster labels and probabilities.
-        return labels
-
-    @classmethod
-    def gl_expansion(cls):
-        return labels
-
-    @classmethod
-    def iteritative_fixed_k(cls, locations, graph):
-        """Call a fixed k clustering method iteratively
-        using the Gap Statisic method to choose K."""
 
 
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
 
-    graph: nx.Graph = field(init=False)
+    K: int = 2
 
     def __post_init__(self):
         # self.graph = self.form_graph(
