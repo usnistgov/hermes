@@ -268,6 +268,7 @@ class ContiguousCluster(Cluster):
         for i in range(np.array(graph.edges).shape[0]):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
+            print(k)
             nx.set_edge_attributes(
                 graph, {(j, k): self.measurements_distance[j, k]}, name="Distance"
             )
