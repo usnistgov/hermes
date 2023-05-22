@@ -269,10 +269,10 @@ class ContiguousCluster(Cluster):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurement_distance[j, k]}, name="Distance"
+                graph, {(j, k): self.measurements_distance[j, k]}, name="Distance"
             )
             nx.set_edge_attributes(
-                graph, {(j, k): self.measurement_similarity[j, k]}, name="Weight"
+                graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
 
         return graph
