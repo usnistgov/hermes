@@ -325,28 +325,7 @@ class ContiguousCluster(Cluster):
 
 
 # TODO look for better docstrings for children
-@typesafedataclass(config=_Config)
-class ContiguousCommunityDiscovery(ContiguousCluster):
-    """Use these algorithms when the number of clusters is not known."""
 
-
-    # @classmethod
-    # def gl_expansion(cls):
-    #     return labels
-
-    
-class IteritativeFixedK(ContiguousCommunityDiscovery):
-        """Call a fixed k clustering method iteratively
-        using the Gap Statisic method to choose K."""
-
-        method: ContiguousFixedKClustering
-        min_K: int = 1
-        max_K: int = 10
-
-        def cluster(self):
-            G = self.graph
-            K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
-            labels = self.method(K)
 
 
 
@@ -362,6 +341,8 @@ class ContiguousFixedKClustering(ContiguousCluster):
         # )  # CQ is it similarity or distance? Waiting.
         self.graph = self.form_graph()
 
+
+@typesafedataclass(config=_Config)
 class Spectral(ContiguousFixedKClustering):
     
     def cluster(cls, graph: nx.Graph, n_clusters: int, **kwargs):
@@ -377,7 +358,12 @@ class Spectral(ContiguousFixedKClustering):
         labels = clusters.labels_
         return labels
 
+@typesafedataclass(config=_Config)
+class ContiguousCommunityDiscovery(ContiguousCluster):
+    """Use these algorithms when the number of clusters is not known."""
 
+
+@typesafedataclass(config=_Config)
 class RBPots(ContiguousCommunityDiscovery):
     resolution: float = 0.2
 
@@ -395,6 +381,22 @@ class RBPots(ContiguousCommunityDiscovery):
                 nx.set_node_attributes(G, {i: k}, name="Labels")
         # Extract the labels
         self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+
+@typesafedataclass(config=_Config)
+class IteritativeFixedK(ContiguousCommunityDiscovery):
+        """Call a fixed k clustering method iteratively
+        using the Gap Statisic method to choose K."""
+
+        # method: ContiguousFixedKClustering
+        min_K: int = 1
+        max_K: int = 10
+
+        def cluster(self):
+            G = self.graph
+            K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+            labels = self.method(K)
+
+
 
 
 #     @classmethod
