@@ -209,7 +209,10 @@ class ContiguousCluster(Cluster):
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
         # Check if the data is all on the same layer:
-        is_2d = np.std(self.locations[:, 2]) < 10e-6
+        if self.locations.shape[1] == 2:
+            is_2d = True
+        elif self.locations.shape[1] > 2:
+            is_2d = np.std(self.locations[:, 2]) < 10e-6
 
         if is_2d:
             tri = Delaunay(self.locations[:, 0:2], qhull_options="i QJ")
