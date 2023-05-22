@@ -343,13 +343,9 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
         min_K: int = 1
         max_K: int = 10
 
-        def cluster(self)
-
-
+        def cluster(self):
             G = self.graph
-
             K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
-
             labels = self.method(K)
 
 
@@ -366,7 +362,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
         # )  # CQ is it similarity or distance? Waiting.
         self.graph = self.form_graph()
 
-class Spectral(ContiguousFixedKClustering)
+class Spectral(ContiguousFixedKClustering):
     
     def cluster(cls, graph: nx.Graph, n_clusters: int, **kwargs):
         """Spectral Clustering."""
