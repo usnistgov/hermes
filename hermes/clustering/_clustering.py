@@ -203,18 +203,23 @@ class ContiguousCluster(Cluster):
         Assigns the measurement distance and similarity as edge attributes.
         Returns a networkx graph object."""
 
-        #         self.set_distance()  # call set distance
-        #         self.set_similarity()  # call set distance
-
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
-        # Check if the data is all on the same layer:
+        
+        # Check for dimensions of input:
         if self.locations.shape[1] == 2:
-            is_2d = True
-        elif self.locations.shape[1] > 2:
-            is_2d = np.std(self.locations[:, 2]) < 10e-6
+            dims = 2
+        elif self.locations.shape[1] == 3:
+            #check for near zero values in the z dimension  
+            if np.std(self.locations[:, 2]) < 10e-6:
+                dims = 2
+            #TODO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
+            else:
+                dims = 3
+        else:
+            raise TypeError("Not implemented yet for number of dimensions")
 
-        if is_2d:
+        if dims == 2:
             tri = Delaunay(self.locations[:, 0:2], qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
@@ -227,7 +232,7 @@ class ContiguousCluster(Cluster):
                 adj_matrix[tri.simplices[i, 1], tri.simplices[i, 2]] = 1
                 adj_matrix[tri.simplices[i, 2], tri.simplices[i, 1]] = 1
 
-        else:
+        elif dims == 3:
             tri = Delaunay(self.locations, qhull_options="i QJ")
 
             for i in range(np.shape(tri.simplices)[0]):
@@ -268,7 +273,6 @@ class ContiguousCluster(Cluster):
         for i in range(np.array(graph.edges).shape[0]):
             j = np.array(graph.edges)[i, 0]
             k = np.array(graph.edges)[i, 1]
-            print(k)
             nx.set_edge_attributes(
                 graph, {(j, k): self.measurements_distance[j, k]}, name="Distance"
             )
@@ -276,10 +280,10 @@ class ContiguousCluster(Cluster):
                 graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
 
-        return graph
+        self.graph = graph
 
     def get_local_membership_prob(
-        self, graph: nx.Graph, cluster_labels: np.ndarray, v: float = 1.0
+        self, v: float = 1.0
     ):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
@@ -289,6 +293,8 @@ class ContiguousCluster(Cluster):
         of each node for each label.
         Each label will be that row number, each node will be that column number.
         """
+        cluster_labels = self.labels
+        graph = self.graph
 
         max_labels = np.max(cluster_labels) + 1
         max_nodes = len(cluster_labels)
@@ -316,7 +322,7 @@ class ContiguousCluster(Cluster):
 
         # Find the average distance and similarity
         # of each node to its nieghboring labels:
-        # average_distance_matrix = cumulative_distance_maxtrix / connection_matrix
+        average_distance_matrix = cumulative_distance_maxtrix / connection_matrix
         average_similarity_matrix = cumulative_similarity_maxtrix / connection_matrix
 
         # Convert the average similarities to probabilities
@@ -325,7 +331,7 @@ class ContiguousCluster(Cluster):
         )  # sum of similarities across the clusters for each node.
         probability_matrix = np.nan_to_num(average_similarity_matrix**v / node_sum, 0)
         probabilities = probability_matrix.T
-        return probabilities
+        self.probabilities = probabilities
 
 
 # TODO look for better docstrings for children
