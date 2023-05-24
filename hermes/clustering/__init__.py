@@ -12,6 +12,6 @@ __all__ = [
     "Cluster",
     "ContiguousCluster",
     "ContiguousFixedKClustering",
-    "ContigousCommunityDiscovery",
+    "ContiguousCommunityDiscovery",
     "RBPots",
 ]
