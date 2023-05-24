@@ -5,7 +5,7 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.base import Analysis
 
-from .heterscedastic_gpc import HeteroscedasticRobustMax, HeteroscedasticMultiClass
+from .heteroscedastic_gpc import HeteroscedasticRobustMax, HeteroscedasticMultiClass
 
 import numpy as np
 
