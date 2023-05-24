@@ -154,7 +154,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
         return components, fractions
     
     @property
-    def compositions_domain_2d(self):
+    def composition_domain_2d(self):
         """Converting the compostions from the 3D simplex to a 2D triangle
         NOTE: the triangle is smaller than the simplex by a factor of sqrt(2)."""
         # In 3D space
@@ -169,7 +169,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
             [0.5, 0.5 * np.sqrt(3)]
         )  # C at the top of an equilateral triangle with the base along x of length 1.
 
-        points = self.compositions_domain[1]  # Read in the 3D compostions
+        points = self.composition_domain[1]  # Read in the 3D compostions
         # Multiply 2D coordinates with the compositions for each component
         points_A = points[:, 0].reshape(-1, 1) * A_2d.reshape(1, -1)
         points_B = points[:, 1].reshape(-1, 1) * B_2d.reshape(1, -1)
