@@ -195,7 +195,6 @@ class ContiguousCluster(Cluster):
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
 
-
     def form_graph(self) -> nx.Graph:
         """Forms a graph based on the measurement locations
         using a Delauny Triangulation. This type of graph will preserve the
@@ -279,7 +278,7 @@ class ContiguousCluster(Cluster):
             nx.set_edge_attributes(
                 graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
-
+        
         self.graph = graph
 
     def get_local_membership_prob(
