@@ -14,7 +14,6 @@ import warnings
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
 import gpflow
-from gpflow.ci_utils import ci_niter
 
 
 class Classification(Analysis):
@@ -66,7 +65,7 @@ class HomoscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=ci_niter(1000)))
+            method ='tnc', options=dict(maxiter=1000))
         
         return m
     
@@ -101,7 +100,7 @@ class SparceHomoscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=ci_niter(1000)))
+            method ='tnc', options=dict(maxiter=1000))
         
         return m
 
@@ -142,7 +141,7 @@ class HeteroscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=ci_niter(1000)))
+            method ='tnc', options=dict(maxiter=1000))
         
         return m
 
@@ -190,6 +189,6 @@ class SparceHeteroscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=ci_niter(1000)))
+            method ='tnc', options=dict(maxiter=1000))
         
         return m
