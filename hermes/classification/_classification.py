@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
 import gpflow
 
-
+@dataclass
 class Classification(Analysis):
     """Base level class for classification - predicting labels of data from known examples"""
 
@@ -29,6 +29,7 @@ class Classification(Analysis):
 
 
 
+@dataclass
 class GPC(Classification):
     """A class for all Gaussian Processes for clasification."""
     ### Set up the GPC ####
@@ -38,6 +39,7 @@ class GPC(Classification):
     kernel = gpflow.kernels.RBF(lengthscales = lengthscales, 
                                 variance = variance) 
 
+@dataclass
 class HomoscedasticGPC(GPC):
     """A class for GPC's where the uncertainty on the labels is the same everywhere."""
     def train(self):
@@ -65,10 +67,13 @@ class HomoscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=1000))
+            method ='tnc', 
+            #options=dict(maxiter=1000)
+            )
         
         return m
     
+@dataclass
 class SparceHomoscedasticGPC(GPC):
     """A class for Sparce GPC's where the uncertainty on the labels is the same everywhere."""
     def train(self):
@@ -104,12 +109,17 @@ class SparceHomoscedasticGPC(GPC):
         
         return m
 
+@dataclass
 class HeteroscedasticGPC(GPC):
     """A class for GPC's where the training data has known uncertainty.
     Specifically, at every observation there is a probabilistic assignment of the labels."""
 
     #Probabilistic labeling
     probabilities: np.array # NxC matrix, where C is the number of clusters - rows must sum to 1.
+
+    # def __init__(self, probabilities):
+    #     self.probabilities = probabilities
+    #     super().__init__(**kwargs)
 
     #Train the models
     def train(self):
@@ -141,10 +151,14 @@ class HeteroscedasticGPC(GPC):
 
         opt_logs = opt.minimize(
             m.training_loss_closure(), m.trainable_variables,
-            method ='tnc', options=dict(maxiter=1000))
+            method ='TNC', 
+            # options=dict(maxiter=1000)
+            )
         
         return m
 
+    # def predict():
+    #     m.predict_y()
 
 class SparceHeteroscedasticGPC(GPC):
     """A class for sparce GPC's where the training data has known uncertainty.
