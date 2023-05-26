@@ -69,8 +69,8 @@ class Cluster(Analysis):
     )
 
     locations: np.ndarray = field(default_factory=_default_ndarray)
-    locations_distance_type: field(init=False, default_factory = EuclideanDistance())# BaseDistance = EuclideanDistance()
-    locations_similarity_type: field(init=False, default_factory= SquaredExponential())#BaseSimilarity = SquaredExponential()
+    locations_distance_type: BaseDistance = EuclideanDistance() #field(init=False, default_factory = EuclideanDistance())
+    locations_similarity_type: BaseSimilarity = SquaredExponential() #field(init=False, default_factory= SquaredExponential())#
     locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(
         init=False, default_factory=_default_ndarray, repr=False
