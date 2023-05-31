@@ -1,5 +1,10 @@
 """Instrument classes."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from pydantic.dataclasses import dataclass as typesafedataclass
+from pydantic import Field
+from pathlib import Path
+from typing import Optional
+
 
 import numpy as np
 import pandas as pd
@@ -15,34 +20,43 @@ class Diffractometer(Instrument):
     """Class for diffractometer instruments"""
 
 
-@dataclass
+config1 = {"allow_arbitrary_types": True}
+
+
+class _Config:  # pylint: disable=too-few-public-methods
+    arbitrary_types_allowed = True
+
+
+@typesafedataclass(config=_Config)
 class PowderDiffractometer(Diffractometer):
     """Class for Powder (aka 1D) diffractometer instruments.
     Typically expect the sample to be a combinatorial wafer (each location has a known, pre-determined composition),
     but ignore the composition information for general samples."""
 
     # Location for example data used in simulation mode:
-    wafer_directory: str
+    wafer_directory: Path
     # Location for wafer coordinates file (tab delimited .txt)
-    wafer_coords_file: str
+    wafer_coords_file: Path  # relative to wafer_directory
     # Location for wafer composition file (tab delimited .txt)
-    wafer_composition_file: str
+    wafer_composition_file: Path  # relative to wafer_directory
     # Location for XRD measurements file (tab delimited .txt)
-    wafer_xrd_file: str
+    wafer_xrd_file: Path  # relative to wafer_directory
 
-    xy_locations: pd.DataFrame = field(init=False)
-    compositions: pd.DataFrame = field(init=False)
-    xrd_measurements: pd.DataFrame = field(init=False)
+    xy_locations: Optional[pd.DataFrame] = Field(init=False, default=None)
+    compositions: Optional[pd.DataFrame] = Field(init=False, default=None)
+    xrd_measurements: Optional[pd.DataFrame] = Field(init=False, default=None)
 
     def load_sim_data(self):
         """Load simulated data."""
-        self.xy_locations = pd.read_table(self.wafer_directory + self.wafer_coords_file)
+        self.xy_locations = pd.read_table(
+            self.wafer_directory.joinpath(self.wafer_coords_file)
+        )
         self.compositions = pd.read_table(
-            self.wafer_directory + self.wafer_composition_file
+            self.wafer_directory.joinpath(self.wafer_composition_file)
         )
 
         self.xrd_measurements = pd.read_table(
-            self.wafer_directory + self.wafer_xrd_file
+            self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
 
     def simulated_move_and_measure(self, compositions_locations):
@@ -50,7 +64,7 @@ class PowderDiffractometer(Diffractometer):
         and return the XRD measurements."""
 
         # If the data for simulation mode hasn't been loaded, load it.
-        if ~hasattr(self, "xy_locations"):
+        if not self.xy_locations:
             self.load_sim_data()
 
         indexes = []
@@ -106,7 +120,7 @@ class PowderDiffractometer(Diffractometer):
         return points_2d
 
 
-@dataclass
+@typesafedataclass(config=_Config)
 class CHESSQM2Beamline(PowderDiffractometer):
     """Class for the QM2 diffractometer at CHESS"""
 
@@ -114,12 +128,14 @@ class CHESSQM2Beamline(PowderDiffractometer):
 
     def load_wafer_file(self):
         """Load the wafer file."""
-        self.xy_locations = pd.read_table(self.wafer_directory + self.wafer_coords_file)
+        self.xy_locations = pd.read_table(
+            self.wafer_directory.joinpath(self.wafer_coords_file)
+        )
         self.compositions = pd.read_table(
-            self.wafer_directory + self.wafer_composition_file
+            self.wafer_directory.joinpath(self.wafer_composition_file)
         )
         self.xrd_measurements = pd.read_table(
-            self.wafer_directory + self.wafer_xrd_file
+            self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
 
     def move_and_measure(self, compositions_locations):
@@ -152,7 +168,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
-    
+
     @property
     def composition_domain_2d(self):
         """Converting the compostions from the 3D simplex to a 2D triangle
@@ -178,6 +194,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
         points_2d = points_A + points_B + points_C
 
         return points_2d
+
     @property
     def two_theta_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
