@@ -18,17 +18,9 @@ from sklearn.cluster import SpectralClustering
 
 from hermes.base import Analysis
 
-# from hermes.schemas import PrivateAttr
 from hermes.distance import BaseDistance, EuclideanDistance
 from hermes.similarity import BaseSimilarity, SquaredExponential
 from hermes.utils import _default_ndarray
-
-# class Distance_measures(Intrinsic_data_analysis):
-
-# class Similarity_measures(Intrinsic_data_analysis):
-#     sim = exp(-distance^2)
-
-#     sim = 1/(dist+epsilon)
 
 
 class UnspecifiedType(Exception):
@@ -206,15 +198,15 @@ class ContiguousCluster(Cluster):
 
         # Create the Adjacency Matrix to fill from the Delauny Triangulation
         adj_matrix = np.zeros((self.locations[:, 0].size, self.locations[:, 0].size))
-        
+
         # Check for dimensions of input:
         if self.locations.shape[1] == 2:
             dims = 2
         elif self.locations.shape[1] == 3:
-            #check for near zero values in the z dimension  
+            # check for near zero values in the z dimension
             if np.std(self.locations[:, 2]) < 10e-6:
                 dims = 2
-            #TODO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
+            # TODO: check for 2D data on a 3D plane (i.e. compositions on the 3-simplex)
             else:
                 dims = 3
         else:
@@ -280,12 +272,10 @@ class ContiguousCluster(Cluster):
             nx.set_edge_attributes(
                 graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
-        
+
         self.graph = graph
 
-    def get_local_membership_prob(
-        self, v: float = 1.0
-    ):
+    def get_local_membership_prob(self, v: float = 1.0):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
         #v is a parameter that adjusts the strentgh of the partitioning with the similarities
@@ -338,11 +328,10 @@ class ContiguousCluster(Cluster):
 # TODO look for better docstrings for children
 
 
-
-
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known."""
+
     K: int = 2
     # graph: nx.Graph = field(init=False)
 
@@ -355,7 +344,6 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
 @typesafedataclass(config=_Config)
 class Spectral(ContiguousFixedKClustering):
-    
     def cluster(cls, graph: nx.Graph, n_clusters: int, **kwargs):
         """Spectral Clustering."""
         # matrix = nx.adjacency_matrix(graph, weight="Weight")  # type: ignore
@@ -368,6 +356,7 @@ class Spectral(ContiguousFixedKClustering):
         )
         labels = clusters.labels_
         return labels
+
 
 @typesafedataclass(config=_Config)
 class ContiguousCommunityDiscovery(ContiguousCluster):
@@ -393,21 +382,20 @@ class RBPots(ContiguousCommunityDiscovery):
         # Extract the labels
         self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
 
+
 @typesafedataclass(config=_Config)
 class IteritativeFixedK(ContiguousCommunityDiscovery):
-        """Call a fixed k clustering method iteratively
-        using the Gap Statisic method to choose K."""
+    """Call a fixed k clustering method iteratively
+    using the Gap Statisic method to choose K."""
 
-        # method: ContiguousFixedKClustering
-        min_K: int = 1
-        max_K: int = 10
+    # method: ContiguousFixedKClustering
+    min_K: int = 1
+    max_K: int = 10
 
-        def cluster(self):
-            G = self.graph
-            K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
-            labels = self.method(K)
-
-
+    def cluster(self):
+        G = self.graph
+        K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+        labels = self.method(K)
 
 
 #     @classmethod
