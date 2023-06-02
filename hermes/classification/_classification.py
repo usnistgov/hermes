@@ -26,7 +26,12 @@ class Classification(Analysis):
     #Test data
     domain: np.array #The set of all possible locations to measure
 
+    def predict(self):
+        """Predict the model accross the domain."""
 
+        mean, var = self.model.predict_y(self.domain)
+        self.mean = mean
+        self.var = var
 
 
 @dataclass
@@ -71,12 +76,16 @@ class HomoscedasticGPC(GPC):
             #options=dict(maxiter=1000)
             )
         
-        return m
+        self.model = m
+
     
 @dataclass
 class SparceHomoscedasticGPC(GPC):
     """A class for Sparce GPC's where the uncertainty on the labels is the same everywhere."""
     def train(self):
+        """Use the training data to train the model."""
+
+
         #Number of classes 
         C = np.unique(self.labels)
         #Tensor of the lables
@@ -94,7 +103,7 @@ class SparceHomoscedasticGPC(GPC):
         Z = Z1[:M, :].copy() #Take the first M locations of Z1 to initialize the inducing points
 
 
-        m = gpflow.models.SVGP(
+        model = gpflow.models.SVGP(
             kernel,
             likelihood,
             Z,
@@ -104,10 +113,12 @@ class SparceHomoscedasticGPC(GPC):
         opt = gpflow.optimizers.Scipy()
 
         opt_logs = opt.minimize(
-            m.training_loss_closure(), m.trainable_variables,
+            model.training_loss_closure(), model.trainable_variables,
             method ='tnc', options=dict(maxiter=1000))
         
-        return m
+        self.model = model
+
+
 
 @dataclass
 class HeteroscedasticGPC(GPC):
@@ -155,11 +166,11 @@ class HeteroscedasticGPC(GPC):
             # options=dict(maxiter=1000)
             )
         
-        return m
+        self.model = m
+    
 
-    # def predict():
-    #     m.predict_y()
 
+@dataclass
 class SparceHeteroscedasticGPC(GPC):
     """A class for sparce GPC's where the training data has known uncertainty.
     Specifically, at every observation there is a probabilistic assignment of the labels."""
@@ -205,4 +216,5 @@ class SparceHeteroscedasticGPC(GPC):
             m.training_loss_closure(), m.trainable_variables,
             method ='tnc', options=dict(maxiter=1000))
         
-        return m
+        self.model = m
+    
