@@ -25,14 +25,22 @@ class Classification(Analysis):
     
     #Test data
     domain: np.array #The set of all possible locations to measure
+    
+    #Unmeasured_Locations
+    @property
+    def unmeasured_locations(self):
+        """Find all the locations in the domain that haven't been measured."""
 
-    def predict(self):
-        """Predict the model accross the domain."""
+        measured_set = set(map(tuple, self.locations))
+        domain_set = set(map(tuple, self.domain))
 
-        mean, var = self.model.predict_y(self.domain)
-        self.mean = mean
-        self.var = var
+        unmeasured = np.array(list(domain_set - measured_set))
+        return unmeasured
 
+    model: Any
+
+# class NN(Classification):
+#     model: pytorch = None
 
 @dataclass
 class GPC(Classification):
@@ -41,8 +49,23 @@ class GPC(Classification):
     #RBF Kernel
     lengthscales = 1.0
     variance = 1.0
+
     kernel = gpflow.kernels.RBF(lengthscales = lengthscales, 
                                 variance = variance) 
+    
+   
+    def predict(self):
+        """Predict the model accross the domain."""
+
+        mean, var = self.model.predict_y(self.domain)
+        self.mean = mean
+        self.var = var
+
+    def acquire(self):
+        """Acquire the next point(s) to measure."""
+
+        mean, var = self.model.predict_y(self.unmeasured_locations)
+        
 
 @dataclass
 class HomoscedasticGPC(GPC):
