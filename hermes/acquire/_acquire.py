@@ -41,7 +41,7 @@ class PureExplore(Acquisition):
     def calculate(self):
         next = np.argmax(self.var)
         
-        next_loc = self.unmeasured_locations[next]
+        next_loc = self.unmeasured_locations[next].reshape(-1, self.unmeasured_locations.shape[1])
         return next_loc
 
 @dataclass

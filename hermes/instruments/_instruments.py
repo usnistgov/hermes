@@ -124,6 +124,11 @@ class PowderDiffractometer(Diffractometer):
         points_2d = points_A + points_B + points_C
 
         return points_2d
+    
+    
+    # def compositions_2d_to_index(self, locations_2d):
+
+
 
 
 @typesafedataclass(config=_Config)

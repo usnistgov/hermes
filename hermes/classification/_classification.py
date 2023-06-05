@@ -40,6 +40,18 @@ class Classification(Analysis):
     #The Model
     model: Optional[Any] = field(init=False, default=None)
 
+    #Indexes
+    def return_index(self, locations):
+        #find the indexes of the domain that coorispond to the locations
+        #Useful to convert locations requested by acquisition functions to an index in the entire domain.
+        indexes = []
+        for i in range(locations.shape[0]):
+            index = np.argwhere(self.domain == locations[i,:])
+            indexes.append(index[0][0])
+        
+        return indexes
+
+
 @dataclass
 class GPC(Classification):
     """A class for all Gaussian Processes for clasification."""
