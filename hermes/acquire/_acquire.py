@@ -12,7 +12,7 @@ from scipy.special import erf
 @dataclass
 class Acquisition:
     """Base level class for acquisiton functions"""
-
+    unmeasured_locations: np.array
     mean: np.array
     var: np.array
 
@@ -21,7 +21,9 @@ class Random(Acquisition):
 
     def calculate(self):
         next = np.random.randint(0, self.mean.shape[0])
-        return next
+
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
 
 
 @dataclass
@@ -29,14 +31,18 @@ class PureExploit(Acquisition):
 
     def calculate(self):
         next = np.argmax(self.mean)
-        return next
+        
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
 
 @dataclass
 class PureExplore(Acquisition):
 
     def calculate(self):
         next = np.argmax(self.var)
-        return next
+        
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
 
 @dataclass
 class UpperConfidenceBound(Acquisition):
@@ -44,7 +50,9 @@ class UpperConfidenceBound(Acquisition):
 
     def calculate(self):
         next = np.argmax(self.mean + self.num_sigmas*np.sqrt(self.var))
-        return next
+
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
     
 @dataclass
 class ScheduledUpperConfidenceBound(Acquisition):
@@ -55,7 +63,9 @@ class ScheduledUpperConfidenceBound(Acquisition):
     def calculate(self):
         beta = self.num_sigmas*self.num_measurements/2
         next = np.argmax(self.mean + beta*np.sqrt(self.var))
-        return next
+
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
 
 @dataclass
 class ThompsonSampling(Acquisition):
@@ -80,8 +90,8 @@ class ThompsonSampling(Acquisition):
         
         next_args = np.array(next_points)
         
-        #Return the list of indexs and the draws
-        return next_args
+        next_loc = self.unmeasured_locations[next_args]
+        return next_loc
     
 @dataclass
 class ProbabilityofImprovement(Acquisition):
@@ -95,7 +105,9 @@ class ProbabilityofImprovement(Acquisition):
 
         #Choose the highest probability
         next = np.argmax(PoI)
-        return next
+
+        next_loc = self.unmeasured_locations[next]
+        return next_loc
 
 @dataclass
 class ExpectedImprovement(Acquisition):
@@ -115,4 +127,6 @@ class ExpectedImprovement(Acquisition):
 
         #Choose the highest expected improvement
         next = np.argmax(EI)
-        return next
+
+        next_loc = self.unmeasured_locations[next]
+        return next_loc

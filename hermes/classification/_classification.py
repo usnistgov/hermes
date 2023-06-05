@@ -37,10 +37,8 @@ class Classification(Analysis):
         unmeasured = np.array(list(domain_set - measured_set))
         return unmeasured
 
-    model: Any
-
-# class NN(Classification):
-#     model: pytorch = None
+    #The Model
+    model: Optional[Any] = field(init=False, default=None)
 
 @dataclass
 class GPC(Classification):
@@ -61,10 +59,13 @@ class GPC(Classification):
         self.mean = mean
         self.var = var
 
-    def acquire(self):
-        """Acquire the next point(s) to measure."""
+    def predict_unmeasured(self):
+        """Predict the model on the unmeasured locations of the domain"""
+        #Predict the classes in the unmeasured locations
+        self.mean_unmeasured, var_s = self.model.predict_y(self.unmeasured_locations)
 
-        mean, var = self.model.predict_y(self.unmeasured_locations)
+        #Sum the variances across the classes
+        self.var_unmeasured = np.sum(var_s, axis = 1).reshape(-1,1)
         
 
 @dataclass
