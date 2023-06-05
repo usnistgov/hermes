@@ -1,13 +1,13 @@
 """Instrument classes."""
-from dataclasses import dataclass
-from pydantic.dataclasses import dataclass as typesafedataclass
-from pydantic import Field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-
 import numpy as np
 import pandas as pd
+from pydantic.dataclasses import dataclass as typesafedataclass
+
+from hermes.utils import _check_attr
 
 
 @dataclass
@@ -42,9 +42,9 @@ class PowderDiffractometer(Diffractometer):
     # Location for XRD measurements file (tab delimited .txt)
     wafer_xrd_file: Path  # relative to wafer_directory
 
-    xy_locations: Optional[pd.DataFrame] = Field(init=False, default=None)
-    compositions: Optional[pd.DataFrame] = Field(init=False, default=None)
-    xrd_measurements: Optional[pd.DataFrame] = Field(init=False, default=None)
+    xy_locations: Optional[pd.DataFrame] = field(init=False, default=None)
+    compositions: Optional[pd.DataFrame] = field(init=False, default=None)
+    xrd_measurements: Optional[pd.DataFrame] = field(init=False, default=None)
 
     def load_sim_data(self):
         """Load simulated data."""
@@ -63,10 +63,12 @@ class PowderDiffractometer(Diffractometer):
         """Move (in composition-space) to new locations
         and return the XRD measurements."""
 
-        # If the data for simulation mode hasn't been loaded, load it.
-        if not self.xy_locations:
-            self.load_sim_data()
+        # # If the data for simulation mode hasn't been loaded, load it.
+        # if not self.xy_locations:
+        #     self.load_sim_data()
 
+        _check_attr(self, "compositions")
+        _check_attr(self, "xrd_measurements")
         indexes = []
         for comp in compositions_locations:
             index = self.compositions[self.compositions.to_numpy() == comp].index[0]
@@ -78,11 +80,13 @@ class PowderDiffractometer(Diffractometer):
     @property
     def sim_wafer_coords(self):
         """Get all of the possible coordinates of the sample"""
+        _check_attr(self, "xy_locations")
         return self.xy_locations.to_numpy()
 
     @property
     def sim_composition_domain(self):
         """Get the entire domain in composition space."""
+        _check_attr(self, "compositions")
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
@@ -90,6 +94,7 @@ class PowderDiffractometer(Diffractometer):
     @property
     def sim_two_theta_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
+        _check_attr(self, "xrd_measurements")
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
 
@@ -97,6 +102,7 @@ class PowderDiffractometer(Diffractometer):
     def compositions_2d(self):
         """Converting the compostions from the 3D simplex to a 2D triangle
         NOTE: the triangle is smaller than the simplex by a factor of sqrt(2)."""
+        _check_attr(self, "compositions")
         # In 3D space
         A_3d = np.array([1, 0, 0])
         B_3d = np.array([0, 1, 0])
@@ -125,6 +131,10 @@ class CHESSQM2Beamline(PowderDiffractometer):
     """Class for the QM2 diffractometer at CHESS"""
 
     simulation: bool = False
+
+    def __post_init_post_parse__(self):
+        if self.simulation:
+            self.load_sim_data()
 
     def load_wafer_file(self):
         """Load the wafer file."""
@@ -160,11 +170,13 @@ class CHESSQM2Beamline(PowderDiffractometer):
     @property
     def wafer_coords(self):
         """Get all of the possible coordinates of the sample"""
+        _check_attr(self, "xy_locations")
         return self.xy_locations.to_numpy()
 
     @property
     def composition_domain(self):
         """Get the entire domain in composition space."""
+        _check_attr(self, "compositions")
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
@@ -173,6 +185,8 @@ class CHESSQM2Beamline(PowderDiffractometer):
     def composition_domain_2d(self):
         """Converting the compostions from the 3D simplex to a 2D triangle
         NOTE: the triangle is smaller than the simplex by a factor of sqrt(2)."""
+
+        _check_attr(self, "compositions")
         # In 3D space
         A_3d = np.array([1, 0, 0])
         B_3d = np.array([0, 1, 0])
@@ -198,6 +212,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
     @property
     def two_theta_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
+        _check_attr(self, "xrd_measurements")
         two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
         return two_theta
 

@@ -6,7 +6,7 @@ Created on Tue Sep 27 11:57:27 2022
 @author: Austin McDannald
 """
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Any, Optional
 
 import networkx as nx
@@ -17,26 +17,23 @@ from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
 
 from hermes.base import Analysis
-
 from hermes.distance import BaseDistance, EuclideanDistance
 from hermes.similarity import BaseSimilarity, SquaredExponential
-from hermes.utils import _default_ndarray
+from hermes.utils import _check_attr, _default_ndarray
 
 
 class UnspecifiedType(Exception):
     """Raised when no Distance or Similarity type is specified."""
-
-    pass
 
 
 # BaseSimilarity = TypeVar("BaseSimilarity", bound=BaseSimilarity)
 # BaseDistance = TypeVar("BaseDistance", bound=BaseDistance)
 
 
-def _compute_distance(
-    type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None, **kwargs
-):
-    return type_.calculate(X, Y, **kwargs)  # type: ignore
+# def _compute_distance(
+#     type_: BaseDistance, X: np.ndarray, Y: Optional[np.ndarray] = None, **kwargs
+# ):
+#     return type_.calculate(X, Y, **kwargs)  # type: ignore
 
 
 class _Config:  # pylint: disable=too-few-public-methods
@@ -50,10 +47,16 @@ class Cluster(Analysis):
 
     measurements: np.ndarray
 
-    measurements_distance_type: BaseDistance = EuclideanDistance()# field(init=True, default_factory=EuclideanDistance())#
-    measurements_similarity_type: BaseSimilarity = SquaredExponential()# field(init=True, default_factory=SquaredExponential())
+    measurements_distance_type: BaseDistance = (
+        EuclideanDistance()
+    )  # field(init=True, default_factory=EuclideanDistance())#
+    measurements_similarity_type: BaseSimilarity = (
+        SquaredExponential()
+    )  # field(init=True, default_factory=SquaredExponential())
     measurements_distance: np.ndarray = field(
-        init=False, default_factory=_default_ndarray, repr=False
+        init=False,
+        default_factory=_default_ndarray,
+        repr=False
         # init=False, repr=False
     )
     measurements_similarity: np.ndarray = field(
@@ -61,10 +64,17 @@ class Cluster(Analysis):
     )
 
     locations: np.ndarray = field(default_factory=_default_ndarray)
-    locations_distance_type: BaseDistance = EuclideanDistance() #field(init=False, default_factory = EuclideanDistance())
-    locations_similarity_type: BaseSimilarity = SquaredExponential() #field(init=False, default_factory= SquaredExponential())#
+    locations_distance_type: BaseDistance = (
+        EuclideanDistance()
+    )  # field(init=False, default_factory = EuclideanDistance())
+    locations_similarity_type: BaseSimilarity = SquaredExponential()
+    # field(init=False, default_factory= SquaredExponential())#
     locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(
+        init=False, default_factory=_default_ndarray, repr=False
+    )
+    labels: np.ndarray = field(init=False, default_factory=_default_ndarray, repr=False)
+    probabilities: np.ndarray = field(
         init=False, default_factory=_default_ndarray, repr=False
     )
 
@@ -121,8 +131,6 @@ class Cluster(Analysis):
         return f"Cluster(locations={self.locations.shape}, measurements={self.measurements.shape}, locations_distance_type={self.locations_distance_type}, measurements_distance_type={self.measurements_distance_type})"
 
     # TODO: only create class of train hgpc, hgpc classes can be private
-
-    # make pairwise_metrics smart enough: type defines what is x and y
 
     def get_global_membership_prob(self, v: float = 1.0, exclude_self: bool = False):
         """Get the probability of each measurement beloning to each cluster."""
@@ -189,7 +197,11 @@ class ContiguousCluster(Cluster):
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters."""
 
-    def form_graph(self) -> nx.Graph:
+    graph: Optional[nx.Graph] = field(init=False, default=None)
+    _graph: Optional[nx.Graph] = field(default=None)
+    # graph: Optional[nx.Graph] = field(init=False, default_factory=_default_none)
+
+    def form_graph(self) -> None:
         """Forms a graph based on the measurement locations
         using a Delauny Triangulation. This type of graph will preserve the
         contiguous constraint when cut.
@@ -210,7 +222,7 @@ class ContiguousCluster(Cluster):
             else:
                 dims = 3
         else:
-            raise TypeError("Not implemented yet for number of dimensions")
+            raise NotImplementedError("Not implemented yet for number of dimensions")
 
         if dims == 2:
             tri = Delaunay(self.locations[:, 0:2], qhull_options="i QJ")
@@ -273,7 +285,16 @@ class ContiguousCluster(Cluster):
                 graph, {(j, k): self.measurements_similarity[j, k]}, name="Weight"
             )
 
-        self.graph = graph
+        # self.graph = graph
+        self._graph = graph
+
+    def __getattribute__(self, __name: str) -> Any:
+        if __name == "graph":
+            if self._graph:
+                return self._graph
+            self.form_graph()
+            return self._graph
+        return super().__getattribute__(__name)
 
     def get_local_membership_prob(self, v: float = 1.0):
         """Get the membership proabilities of each measurement beloning to each cluster
@@ -284,6 +305,8 @@ class ContiguousCluster(Cluster):
         of each node for each label.
         Each label will be that row number, each node will be that column number.
         """
+        for attr in ["labels", "graph"]:
+            _check_attr(self, attr)
         cluster_labels = self.labels
         graph = self.graph
 
@@ -335,16 +358,18 @@ class ContiguousFixedKClustering(ContiguousCluster):
     K: int = 2
     # graph: nx.Graph = field(init=False)
 
-    def __post_init__(self):
-        # self.graph = self.form_graph(
-        #     self.measurement_similarity
-        # )  # CQ is it similarity or distance? Waiting.
-        self.graph = self.form_graph()
+    # def __post_init__(self):
+    # self.graph = self.form_graph(
+    #     self.measurement_similarity
+    # )  # CQ is it similarity or distance? Waiting.
+    # self.graph = self.form_graph()
 
 
 @typesafedataclass(config=_Config)
 class Spectral(ContiguousFixedKClustering):
-    def cluster(cls, graph: nx.Graph, n_clusters: int, **kwargs):
+    """Spectral Clustering."""
+
+    def cluster(self, graph: nx.Graph, n_clusters: int, **kwargs):
         """Spectral Clustering."""
         # matrix = nx.adjacency_matrix(graph, weight="Weight")  # type: ignore
         # affinity = matrix.toarray()
@@ -365,6 +390,8 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 
 @typesafedataclass(config=_Config)
 class RBPots(ContiguousCommunityDiscovery):
+    """RBPots."""
+
     resolution: float = 0.2
 
     def cluster(self):
@@ -375,10 +402,9 @@ class RBPots(ContiguousCommunityDiscovery):
         clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
 
         # Label the graph with the clusters
-        for k in range(len(clusters.communities)):
-            K = clusters.communities[k]
-            for i in K:
-                nx.set_node_attributes(G, {i: k}, name="Labels")
+        for i, k in enumerate(clusters.communities):
+            for q in k:
+                nx.set_node_attributes(G, {q: i}, name="Labels")
         # Extract the labels
         self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
 
