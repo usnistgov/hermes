@@ -17,6 +17,7 @@ from . import acquire
 from . import instruments
 
 #For builing autonomous loops
+from . import loopcontrols
 from . import pipelines
 
 #For various convience functions
@@ -36,6 +37,7 @@ __all__ = [
     "classification",
     "acquire",
     "instruments",
+    "loopcontrols",
     "pipelines",
     "utils",
 ]
