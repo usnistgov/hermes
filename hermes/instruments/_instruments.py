@@ -9,7 +9,11 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.utils import _check_attr
 
-import pyspec
+try:
+    import pyspec
+except ModuleNotFoundError:
+    print("pyspec not found; CHESSQM2Beamline only supports `simulation=True`")
+    pyspec = None
 
 @dataclass
 class Instrument:
@@ -125,8 +129,8 @@ class PowderDiffractometer(Diffractometer):
         points_2d = points_A + points_B + points_C
 
         return points_2d
-    
-    
+
+
     # def compositions_2d_to_index(self, locations_2d):
 
 
@@ -141,6 +145,8 @@ class CHESSQM2Beamline(PowderDiffractometer):
     def __post_init_post_parse__(self):
         if self.simulation:
             self.load_sim_data()
+        elif pyspec == None:
+            raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec"))
 
     def load_wafer_file(self):
         """Load the wafer file."""
