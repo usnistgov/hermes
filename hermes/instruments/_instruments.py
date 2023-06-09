@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.utils import _check_attr
 
+# conditional import of pyspec to support testing on Windows with simulation mode
 try:
     import pyspec
 except ModuleNotFoundError:
