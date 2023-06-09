@@ -12,6 +12,7 @@ from hermes.utils import _check_attr
 # conditional import of pyspec to support testing on Windows with simulation mode
 try:
     import pyspec
+    from pyspec.client import spec
 except ModuleNotFoundError:
     print("pyspec not found; CHESSQM2Beamline only supports `simulation=True`")
     pyspec = None
@@ -149,6 +150,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
     """Class for the QM2 diffractometer at CHESS"""
 
     simulation: bool = False
+    specname: Optional[str] = None
 
     def __post_init_post_parse__(self):
         # load xy coordinates and compositions for discrete library sample
@@ -160,6 +162,9 @@ class CHESSQM2Beamline(PowderDiffractometer):
 
         elif pyspec == None:
             raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec if simulation==False"))
+
+        else:
+            self.specsession = spec(self.specname)
 
     def load_wafer_file(self):
         """Load the wafer file."""
@@ -173,9 +178,11 @@ class CHESSQM2Beamline(PowderDiffractometer):
             self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
 
-    def move_and_measure(self, compositions_locations):
+    def move_and_measure(self, compositions_locations) -> np.array:
         """Move (in composition-space) to new locations
         and return the XRD measurements."""
+
+        # motors = self.specsession.get_motors()
 
         print(f"{compositions_locations=}")
 
@@ -183,24 +190,43 @@ class CHESSQM2Beamline(PowderDiffractometer):
             measurements = self.simulated_move_and_measure(compositions_locations)
 
         else:
-            print(pyspec.__version__)
-            raise NotImplementedError
+            print(f"{pyspec.__version__=}")
 
             # Convert composition to wafer coordinates
             indexes = []
             for comp in compositions_locations:
                 index = self.compositions[self.compositions.to_numpy() == comp].index[0]
                 indexes.append(index)
-            print(f"{indexes=}")
+
             wafer_coords = self.xy_locations.iloc[indexes, :].to_numpy()
 
-
+            print(f"{indexes=}")
+            print(f"{self.xy_locations.loc[indexes]=}")
 
             # For each location:
-            # Move to wafer coordinates
-            # Measure
-            # Reduce
-            # Concatenate measurements
+            measurements = []
+            for idx, row in self.xy_locations.loc[indexes].iterrows():
+                # configure new datafile
+                # self.specsession.run_cmd(f"newfile /tmp/mydata-{idx}.dat")
+
+                # Move to wafer coordinates
+                print(idx, f"{row.x=}, {row.y=}")
+                # TODO: map sample reference frame to  motor coordinates
+                # phi = self.specsession.get_motor("phi")
+                # phi.get_position()
+                # phi.mvr(12.0) #
+
+                # Measure - collect XRD
+                # insert spec subroutine for data collection here
+
+                # Reduce - integrate
+                # datafile = sess.get("DATAFILE")
+                # data = read(datafile)
+                # y = integrate(data)
+                # measurements.append(y)
+
+            # Concatenate measurements - return numpy array
+            # measurements = np.vstack(measurements)
 
         return measurements
 
