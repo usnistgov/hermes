@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.utils import _check_attr
 
+import pyspec
 
 @dataclass
 class Instrument:
@@ -161,6 +162,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
             measurements = self.simulated_move_and_measure(compositions_locations)
 
         else:
+            print(pyspec.__version__)
             raise NotImplementedError
 
             # Convert compostion to wafer coordinates
