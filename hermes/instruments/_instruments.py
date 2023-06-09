@@ -147,7 +147,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
         if self.simulation:
             self.load_sim_data()
         elif pyspec == None:
-            raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec"))
+            raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec if simulation==False"))
 
     def load_wafer_file(self):
         """Load the wafer file."""
