@@ -192,6 +192,8 @@ class CHESSQM2Beamline(PowderDiffractometer):
                 index = self.compositions[self.compositions.to_numpy() == comp].index[0]
                 indexes.append(index)
             print(f"{indexes=}")
+            wafer_coords = self.xy_locations.iloc[indexes, :].to_numpy()
+
 
 
             # For each location:
