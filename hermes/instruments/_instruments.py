@@ -48,11 +48,14 @@ class PowderDiffractometer(Diffractometer):
     # Location for XRD measurements file (tab delimited .txt)
     wafer_xrd_file: Path  # relative to wafer_directory
 
+
+    two_theta_bins: Optional[int] = None
+
     xy_locations: Optional[pd.DataFrame] = field(init=False, default=None)
     compositions: Optional[pd.DataFrame] = field(init=False, default=None)
     xrd_measurements: Optional[pd.DataFrame] = field(init=False, default=None)
 
-    def load_sim_data(self):
+    def load_wafer_data(self):
         """Load simulated data."""
         self.xy_locations = pd.read_table(
             self.wafer_directory.joinpath(self.wafer_coords_file)
@@ -60,7 +63,11 @@ class PowderDiffractometer(Diffractometer):
         self.compositions = pd.read_table(
             self.wafer_directory.joinpath(self.wafer_composition_file)
         )
+        self.xrd_measurements = None
+        if self.two_theta_bins is not None:
+            self.xrd_measurements = np.array([]).reshape(-1, self.two_theta_bins)
 
+    def load_sim_data(self):
         self.xrd_measurements = pd.read_table(
             self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
@@ -144,8 +151,13 @@ class CHESSQM2Beamline(PowderDiffractometer):
     simulation: bool = False
 
     def __post_init_post_parse__(self):
+        # load xy coordinates and compositions for discrete library sample
+        self.load_wafer_data()
+
         if self.simulation:
+            # load simulated XRD measurements
             self.load_sim_data()
+
         elif pyspec == None:
             raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec if simulation==False"))
 
@@ -165,6 +177,8 @@ class CHESSQM2Beamline(PowderDiffractometer):
         """Move (in composition-space) to new locations
         and return the XRD measurements."""
 
+        print(f"{compositions_locations=}")
+
         if self.simulation:
             measurements = self.simulated_move_and_measure(compositions_locations)
 
@@ -172,7 +186,14 @@ class CHESSQM2Beamline(PowderDiffractometer):
             print(pyspec.__version__)
             raise NotImplementedError
 
-            # Convert compostion to wafer coordinates
+            # Convert composition to wafer coordinates
+            indexes = []
+            for comp in compositions_locations:
+                index = self.compositions[self.compositions.to_numpy() == comp].index[0]
+                indexes.append(index)
+            print(f"{indexes=}")
+
+
             # For each location:
             # Move to wafer coordinates
             # Measure
