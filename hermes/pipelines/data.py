@@ -5,7 +5,7 @@ from typing import Type
 
 import numpy as np
 
-from hermes.base import BaseDataPipeline, BaseArchive
+from hermes.base import BaseArchive, BaseDataPipeline
 from hermes.base.analysis import Analysis
 from hermes.distance import BaseDistance
 from hermes.similarity import BaseSimilarity
@@ -20,6 +20,7 @@ class DataPipeline(BaseDataPipeline):
         locations: np.ndarray,
         distance: Type[BaseDistance],
         similarity: Type[BaseSimilarity],
+        acquisition: Type[Acquisition],
         analysis: list[Type[Analysis]],  # ordered
         archive: Type[BaseArchive],  # JSON, SQLlite, Cordra
     ):

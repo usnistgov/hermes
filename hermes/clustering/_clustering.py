@@ -77,6 +77,9 @@ class Cluster(Analysis):
     probabilities: np.ndarray = field(
         init=False, default_factory=_default_ndarray, repr=False
     )
+    _clustered: bool = field(
+        default=False, init=False, repr=False
+    )  # has it been clustered?
 
     """Automatically re-calculate all the distances and similarities when the atributes are set.
     This prevents miss-labeling the distances when the type is changed after the initial calcuation."""
@@ -380,6 +383,7 @@ class Spectral(ContiguousFixedKClustering):
             affinity
         )
         labels = clusters.labels_
+        self._clustered = True
         return labels
 
 
@@ -407,6 +411,7 @@ class RBPots(ContiguousCommunityDiscovery):
                 nx.set_node_attributes(G, {q: i}, name="Labels")
         # Extract the labels
         self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+        self._clustered = True
 
 
 @typesafedataclass(config=_Config)
@@ -422,6 +427,7 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
         G = self.graph
         K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
         labels = self.method(K)
+        self._clustered = True
 
 
 #     @classmethod
