@@ -17,6 +17,7 @@ except ModuleNotFoundError:
     print("pyspec not found; CHESSQM2Beamline only supports `simulation=True`")
     pyspec = None
 
+
 @dataclass
 class Instrument:
     """Base level class for communicating with instruments."""
@@ -48,7 +49,6 @@ class PowderDiffractometer(Diffractometer):
     wafer_composition_file: Path  # relative to wafer_directory
     # Location for XRD measurements file (tab delimited .txt)
     wafer_xrd_file: Path  # relative to wafer_directory
-
 
     two_theta_bins: Optional[int] = None
 
@@ -139,10 +139,7 @@ class PowderDiffractometer(Diffractometer):
 
         return points_2d
 
-
     # def compositions_2d_to_index(self, locations_2d):
-
-
 
 
 @typesafedataclass(config=_Config)
@@ -161,7 +158,11 @@ class CHESSQM2Beamline(PowderDiffractometer):
             self.load_sim_data()
 
         elif pyspec == None:
-            raise(ModuleNotFoundError("CHESSQM2Beamline requires pyspec if simulation==False"))
+            raise (
+                ModuleNotFoundError(
+                    "CHESSQM2Beamline requires pyspec if simulation==False"
+                )
+            )
 
         else:
             self.specsession = spec(self.specname)
@@ -178,7 +179,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
             self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
 
-    def move_and_measure(self, compositions_locations) -> np.array:
+    def move_and_measure(self, compositions_locations) -> np.ndarray:
         """Move (in composition-space) to new locations
         and return the XRD measurements."""
 
