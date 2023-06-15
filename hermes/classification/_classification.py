@@ -78,6 +78,16 @@ class GPC(Classification):
         # Sum the variances across the classes
         self.var_unmeasured = np.sum(var_s, axis=1).reshape(-1, 1)
 
+    # def ML_as_service_predict(self):
+    #     #Invoke the model from the ML as service run:
+    #     model_name = self.model_name
+
+    #     #some http command to call the model_name
+
+    #     self.mean = mean
+    #     self.var = var
+
+
 
 @dataclass
 class HomoscedasticGPC(GPC):
@@ -116,6 +126,7 @@ class HomoscedasticGPC(GPC):
         )
 
         self.model = m
+
 
 
 @dataclass
@@ -218,6 +229,49 @@ class HeteroscedasticGPC(GPC):
 
         self.model = m
 
+    # def ML_service_train(self):
+    #     # Tensor of the lables
+    #     Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
+    #     # Tensor of the probabilities
+    #     Sigma_y = tf.convert_to_tensor(self.probabilities)
+    #     # Number of clusters
+    #     C = len(self.probabilities[0, :])
+
+    #     # Package training data
+    #     data = (self.locations.astype("float"), Y)
+
+    #     ### Set up the GPC ####
+    #     # Robustmax Multiclass Likelihood
+    #     invlink = HeteroscedasticRobustMax(
+    #         C, Sigma_y
+    #     )  # Robustmax inverse link function
+    #     likelihood = HeteroscedasticMultiClass(
+    #         C, invlink=invlink
+    #     )  # Multiclass likelihood
+
+    #     m = gpflow.models.VGP(
+    #         data=data,
+    #         kernel=self.kernel,
+    #         likelihood=likelihood,
+    #         num_latent_gps=C,
+    #     )
+
+    #     #### Train the GPC ####
+    #     opt = gpflow.optimizers.Scipy()
+
+    #     opt_logs = opt.minimize(
+    #         m.training_loss_closure(),
+    #         m.trainable_variables,
+    #         method="TNC",
+    #         # options=dict(maxiter=1000)
+    #     )
+
+    #     #Send model to ML as service
+    #     ## some http command:
+
+    #     model_name = ###
+    #     self.model_name = model_name
+    #     self.model = m
 
 @dataclass
 class SparceHeteroscedasticGPC(GPC):
