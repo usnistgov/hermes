@@ -10,11 +10,11 @@ class Archiver:
 
 
 @dataclass
-class JSON(Archiver):
+class JSONizer(Archiver):
     """Class for writing JSON's"""
 
 @dataclass
-class CombiMappingModels(JSON):
+class CombiMappingModels(JSONizer):
     """For archiving the models analyze combi wafers with:
     Instrument
     Clustering Model
