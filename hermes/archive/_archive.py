@@ -21,8 +21,8 @@ class CombiMappingModels(JSONizer):
     Classification Model"""
     save_directory = "/some/directory/"
 
-
     instrument: Any
+    
     cluster_method: Any
     classification_method: Any 
     
