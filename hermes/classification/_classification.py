@@ -19,6 +19,10 @@ import gpflow
 class Classification(Analysis):
     """Base level class for classification - predicting labels of data from known examples"""
 
+    # Book-keeping
+    indexes: np.ndarray # Indexes of all the possible 
+    measured_indexes: np.ndarray # Indexes that have been measured
+
     # Training data
     locations: np.ndarray  # Locations of the oberservations
     labels: np.ndarray  # labels in the form of an Nx1 matrix, where N is the number of observations.
@@ -28,14 +32,20 @@ class Classification(Analysis):
 
     # Unmeasured_Locations
     @property
-    def unmeasured_locations(self):
-        """Find all the locations in the domain that haven't been measured."""
+    def unmeasured_indexes(self):
+        """Find all the indexes in the domain that haven't been measured."""
 
-        measured_set = set(map(tuple, self.locations))
-        domain_set = set(map(tuple, self.domain))
+        measured_set = set(map(tuple, self.measured_indexes))
+        domain_set = set(map(tuple, self.indexes))
 
         unmeasured = np.array(list(domain_set - measured_set))
         return unmeasured
+    
+    @property
+    def unmeasured_locations(self):
+        """Find all the indexes in the domain that haven't been measured."""
+        unmeas_locations = self.domain[self.unmeasured_indexes]
+        return unmeas_locations
 
     # The Model
     model: Optional[Any] = field(init=False, default=None)
@@ -46,7 +56,7 @@ class Classification(Analysis):
         # Useful to convert locations requested by acquisition functions to an index in the entire domain.
         indexes = []
         for i in range(locations.shape[0]):
-            index = np.argwhere(self.domain == locations[i, :])
+            index = np.argmax(np.prod(self.domain == locations[i, :], axis = 1))
             indexes.append(index[0][0])
 
         return indexes

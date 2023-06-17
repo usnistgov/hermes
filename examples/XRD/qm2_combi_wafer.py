@@ -23,6 +23,9 @@ domain = QM2_instrument.xy_locations.to_numpy()
 #domain_2d = QM2_instrument.composition_domain_2d
 #domain_3d = QM2_instrument.composition_domain[1]
 
+#Get the indexes in the domain:
+indexes = np.arange(0, domain.shape[0])
+
 #Choose the initial locations
 start_measurements = 4
 initialization_method = hermes.loopcontrols.RandomStart(domain, start_measurements)
@@ -31,6 +34,7 @@ print("next_indexes =", next_indexes)
 next_locations = domain[next_indexes]
 
 #Initialize containers for locations and measurements:
+measured_indexes = np.array([])
 locations = np.array([]).reshape(-1,domain.shape[1])
 measurements = np.array([]).reshape(-1, QM2_instrument.diffraction_space_bins)
 
@@ -48,7 +52,7 @@ for n in range(AL_loops):
     print("Moving and Measureing")
 
     next_measurements = QM2_instrument.move_and_measure(next_indexes)
-
+    measured_indexes = np.append(measured_indexes, next_indexes)
     locations = np.append(locations, next_locations, axis =0)
     measurements = np.append(measurements, next_measurements, axis = 0)
 
@@ -89,9 +93,8 @@ for n in range(AL_loops):
 
     archiver.cluster_method = cluster_method
     archiver.classification_method = classification_method
+    archiver.measured_indexes = measured_indexes
     archiver.next_indexes = next_indexes
-    archiver.locations = locations
-    archiver.measurements = measurements
 
     archiver.write_loopdata_file(Loop_index = n)
     
