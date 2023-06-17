@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from typing import Any, Optional
+
 import numpy as np
 import json
 
@@ -19,16 +21,16 @@ class CombiMappingModels(JSONizer):
     Instrument
     Clustering Model
     Classification Model"""
-    save_directory = "/some/directory/"
+    save_directory: any #"/some/directory/"
 
-    instrument: Any
+    instrument: any
     
-    cluster_method: Any
-    classification_method: Any 
+    cluster_method: Optional[Any] = None
+    classification_method: Optional[Any] = None 
     
-    next_indexes: Any   
-    locations: Any 
-    measurements: Any 
+    next_indexes: Optional[Any] = None
+    locations: Optional[Any] = None
+    measurements: Optional[Any] = None
 
 
     def write_metadata_file(self):
@@ -38,11 +40,12 @@ class CombiMappingModels(JSONizer):
         results_dictionary = {}
 
         results_dictionary["Timestamp"] = timestampStr
-    
-        results_dictionary["Domain"] = self.instrument.composition_domain
-        results_dictionary["Two_Theta_Space"] = self.instrument.two_theta_space
+        if self.instrument.composition_domain is not None:
+            results_dictionary["Domain"] = self.instrument.composition_domain
+        # if self.instrument.diffraction_space is not None:
+          #  results_dictionary["Diffraction_Space"] = self.instrument.diffraction_space
 
-        results_dictionary["Next_indexes"] = self.next_indexes
+        results_dictionary["Next_indexes"] = str(self.next_indexes)
 
         filename = "Loop_start_"+timestampStr+".json"
         fullfilename = self.save_directory+filename
@@ -57,20 +60,20 @@ class CombiMappingModels(JSONizer):
 
         results_dictionary["Timestamp"] = timestampStr
 
-        results_dictionary["locations"] = self.locations
-        results_dictionary["measurements"] = self.measurements
+        results_dictionary["locations"] = str(self.locations)
+        results_dictionary["measurements"] = str([meas for meas in self.measurements])
 
-        results_dictionary["labels"] = self.cluster_method.labels
-        results_dictionary["probabilities"] = self.cluster_method.probabilities
+        results_dictionary["labels"] = str(self.cluster_method.labels)
+        results_dictionary["probabilities"] = str(self.cluster_method.probabilities.tolist())
 
         results_dictionary["kernel"] = self.classification_method.model.kernel.name
-        results_dictionary["k_lengthscale"] = self.classification_method.model.kernel.lengthscales.numpy()
-        results_dictionary["k_variance"] = self.classification_method.model.kernel.variance.numpy()
+        results_dictionary["k_lengthscale"] = str(self.classification_method.model.kernel.lengthscales.numpy())
+        results_dictionary["k_variance"] = str(self.classification_method.model.kernel.variance.numpy())
 
-        results_dictionary["mean"] = self.classification_method.mean
-        results_dictionary["var"] = self.classification_method.var
+        results_dictionary["mean"] = str(self.classification_method.mean)
+        results_dictionary["var"] = str(self.classification_method.var)
 
-        results_dictionary["Next_indexes"] = self.next_indexes
+        results_dictionary["Next_indexes"] = str(self.next_indexes)
 
         filename = f"Loop_{Loop_index}"+timestampStr+".json"
         fullfilename = self.save_directory+filename

@@ -1,13 +1,17 @@
 """Instrument classes."""
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
-
+from typing import Any, Optional
+import os
 import numpy as np
 import pandas as pd
 from pydantic.dataclasses import dataclass as typesafedataclass
+import time
 
 from hermes.utils import _check_attr
+
+from . import PySpecClient
+from pyspec.client.SpecConnection import SpecConnection
 
 # conditional import of pyspec to support testing on Windows with simulation mode
 try:
@@ -17,6 +21,9 @@ except ModuleNotFoundError:
     print("pyspec not found; CHESSQM2Beamline only supports `simulation=True`")
     pyspec = None
 
+### import integration code
+from .QM2_pyfai_integrate import data_reduction, integrate_images
+poni_path = "/nfs/chess/sw/hermes/hermes/instruments/lab6_17keV.poni"
 
 @dataclass
 class Instrument:
@@ -46,11 +53,11 @@ class PowderDiffractometer(Diffractometer):
     # Location for wafer coordinates file (tab delimited .txt)
     wafer_coords_file: Path  # relative to wafer_directory
     # Location for wafer composition file (tab delimited .txt)
-    wafer_composition_file: Path  # relative to wafer_directory
+    wafer_composition_file: Optional[Any] = field(init=False, default=None)  # relative to wafer_directory
     # Location for XRD measurements file (tab delimited .txt)
-    wafer_xrd_file: Path  # relative to wafer_directory
-
-    two_theta_bins: Optional[int] = None
+    wafer_xrd_file: Optional[Any] = field(init=False, default=None)
+    diffraction_space_name: Optional[str] = "Q-space"
+    diffraction_space_bins: Optional[int] = None 
 
     xy_locations: Optional[pd.DataFrame] = field(init=False, default=None)
     compositions: Optional[pd.DataFrame] = field(init=False, default=None)
@@ -61,12 +68,13 @@ class PowderDiffractometer(Diffractometer):
         self.xy_locations = pd.read_table(
             self.wafer_directory.joinpath(self.wafer_coords_file)
         )
-        self.compositions = pd.read_table(
-            self.wafer_directory.joinpath(self.wafer_composition_file)
-        )
+        if self.wafer_composition_file is not None:
+            self.compositions = pd.read_table(
+                self.wafer_directory.joinpath(self.wafer_composition_file)
+            )
         self.xrd_measurements = None
-        if self.two_theta_bins is not None:
-            self.xrd_measurements = np.array([]).reshape(-1, self.two_theta_bins)
+        if self.diffraction_space_bins is not None:
+            self.xrd_measurements = np.array([]).reshape(-1, self.diffraction_space_bins)
 
     def load_sim_data(self):
         self.xrd_measurements = pd.read_table(
@@ -149,6 +157,21 @@ class CHESSQM2Beamline(PowderDiffractometer):
     simulation: bool = False
     specname: Optional[str] = None
 
+
+
+    spec_data_dir = "/nfs/chess/id4b/2023-2/sarker-3729-a/"
+    spec_det_dir="/mnt/currentdaq/sarker-3729-a/"
+ 
+    sample_name = "CoCaAl020222k"
+    
+
+
+    # high level folder where all integrated histograms are stored
+    reduction_dir = "/nfs/chess/id4baux/2023-2/sarker-3729-a/hermes_061623/"
+    
+    reduced_sample_dir = reduction_dir + sample_name
+
+
     def __post_init_post_parse__(self):
         # load xy coordinates and compositions for discrete library sample
         self.load_wafer_data()
@@ -165,7 +188,19 @@ class CHESSQM2Beamline(PowderDiffractometer):
             )
 
         else:
-            self.specsession = spec(self.specname)
+            self.specsession = PySpecClient.PySpecClient("id4b.classe.cornell.edu", "fourc")
+            self.specsession.conn = f"{self.specsession.address}:{self.specsession.port}"
+            self.specsession.spec = SpecConnection(self.specsession.conn)
+            self.specsession.run_cmd("p 'hello'")
+            #self.specsession = spec(self.specname)
+            self.specsession.run_cmd(f"cd {self.spec_data_dir}")
+            dir_exists = os.path.exists(f"{self.spec_data_dir}{self.sample_name}")
+            if dir_exists == False:
+            	self.specsession.run_cmd(f"u mkdir {self.sample_name}")
+            self.specsession.run_cmd(f"cd {self.sample_name}")
+            red_dir_exists = os.path.exists(f"{self.reduced_sample_dir}")
+            if red_dir_exists ==False:
+                os.mkdir(self.reduced_sample_dir)
 
     def load_wafer_file(self):
         """Load the wafer file."""
@@ -179,38 +214,60 @@ class CHESSQM2Beamline(PowderDiffractometer):
             self.wafer_directory.joinpath(self.wafer_xrd_file)
         )
 
-    def move_and_measure(self, compositions_locations) -> np.ndarray:
+    def move_and_measure(self, indexes) -> np.ndarray:
         """Move (in composition-space) to new locations
         and return the XRD measurements."""
 
-        # motors = self.specsession.get_motors()
-
-        print(f"{compositions_locations=}")
+        # print(f"{compositions_locations=}")
 
         if self.simulation:
             measurements = self.simulated_move_and_measure(compositions_locations)
 
         else:
-            print(f"{pyspec.__version__=}")
+            # print(f"{pyspec.__version__=}")
 
             # Convert composition to wafer coordinates
-            indexes = []
-            for comp in compositions_locations:
-                index = self.compositions[self.compositions.to_numpy() == comp].index[0]
-                indexes.append(index)
+            #indexes = []
+            #for comp in compositions_locations:
+            #    index = self.compositions[self.compositions.to_numpy() == comp].index[0]
+            #    indexes.append(index)
 
-            wafer_coords = self.xy_locations.iloc[indexes, :].to_numpy()
+            #wafer_coords = self.xy_locations.iloc[indexes, :].to_numpy()
 
             
 
             # For each location:
-            measurements = []
+            measurements = np.array([]).reshape(-1, self.diffraction_space_bins)
             for idx, row in self.xy_locations.loc[indexes].iterrows():
                 # configure new datafile
-                # self.specsession.run_cmd(f"newfile /tmp/mydata-{idx}.dat")
+                site_name = f"{self.sample_name}_{idx}"
+                site_dir = self.spec_data_dir  + self.sample_name + "/" + f"{site_name}"
+                self.specsession.run_cmd(f"u mkdir {site_dir}")
+                self.specsession.run_cmd(f"cd {site_dir}")
+                self.specsession.run_cmd(f"newfile {site_name}")
+                site_dir_det = self.spec_det_dir + self.sample_name + "/" + f"{site_name}"
+                self.specsession.run_cmd(f"pil_setdir {site_dir_det}")
 
                 # Move to wafer coordinates
-                print(idx, f"{row.x=}, {row.y=}")
+                # print(idx, f"{row.x=}, {row.y=}")
+
+                self.specsession.run_cmd(f"umv waferx {row.x} wafery {row.y}")
+                self.specsession.run_cmd("opens")
+                self.specsession.run_cmd("pil_on")
+                self.specsession.run_cmd("tseries 2 3")
+                self.specsession.run_cmd("pil_off")
+                self.specsession.run_cmd("closes") 
+		
+                # sleep to let the image file save
+                time.sleep(10)                
+
+		# integrate the images
+                image_file = site_dir + "/" + site_name + "_001" + "/" + site_name + "_PIL10_001_000.cbf"
+                os.mkdir(self.reduced_sample_dir + '/' + site_name)
+                label = site_name + "/" + site_name + '_PIL10_001_000'
+                measurement = data_reduction(image_file, poni_path, self.reduced_sample_dir,label = label,thbin = self.diffraction_space_bins)
+                measurements = np.concatenate((measurements, np.array(measurement).reshape(1,-1)), axis = 0)
+
                 # TODO: map sample reference frame to  motor coordinates
                 # phi = self.specsession.get_motor("phi")
                 # phi.get_position()
@@ -239,10 +296,13 @@ class CHESSQM2Beamline(PowderDiffractometer):
     @property
     def composition_domain(self):
         """Get the entire domain in composition space."""
-        _check_attr(self, "compositions")
-        components = self.compositions.columns.to_list()
-        fractions = self.compositions.to_numpy()
-        return components, fractions
+        # _check_attr(self, "compositions")
+        if self.compositions is not None:
+            components = self.compositions.columns.to_list()
+            fractions = self.compositions.to_numpy()
+            return components, fractions
+        else:
+            return None
 
     @property
     def composition_domain_2d(self):
@@ -273,11 +333,11 @@ class CHESSQM2Beamline(PowderDiffractometer):
         return points_2d
 
     @property
-    def two_theta_space(self):
+    def diffraction_space(self):
         """Get the 2Theta values of the XRD measurements in degrees"""
         _check_attr(self, "xrd_measurements")
-        two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
-        return two_theta
+        diff_space = self.xrd_measurements.columns.to_numpy().astype(float)
+        return diff_space
 
     # @property
     # def q_space(self):
