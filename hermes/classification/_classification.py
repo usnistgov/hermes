@@ -35,8 +35,8 @@ class Classification(Analysis):
     def unmeasured_indexes(self):
         """Find all the indexes in the domain that haven't been measured."""
 
-        measured_set = set(map(tuple, self.measured_indexes))
-        domain_set = set(map(tuple, self.indexes))
+        measured_set = set(self.measured_indexes)
+        domain_set = set(self.indexes)
 
         unmeasured = np.array(list(domain_set - measured_set))
         return unmeasured
@@ -57,7 +57,7 @@ class Classification(Analysis):
         indexes = []
         for i in range(locations.shape[0]):
             index = np.argmax(np.prod(self.domain == locations[i, :], axis = 1))
-            indexes.append(index[0][0])
+            indexes.append(index)
 
         return indexes
 

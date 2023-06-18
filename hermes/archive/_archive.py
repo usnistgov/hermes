@@ -42,6 +42,9 @@ class CombiMappingModels(JSONizer):
         results_dictionary = {}
 
         results_dictionary["Timestamp"] = timestampStr
+
+        results_dictionary["Sample_name"] = self.instrument.sample_name
+
         if self.instrument.composition_domain is not None:
             results_dictionary["Domain"] = self.instrument.composition_domain
         # if self.instrument.diffraction_space is not None:
@@ -75,7 +78,7 @@ class CombiMappingModels(JSONizer):
         results_dictionary["mean"] = str(self.classification_method.mean.numpy().tolist())
         results_dictionary["var"] = str(self.classification_method.var.numpy().tolist())
 
-        results_dictionary["Next_indexes"] = str(self.next_indexes.tolist())
+        results_dictionary["Next_indexes"] = str(self.next_indexes)
 
         filename = f"Loop_{Loop_index}"+timestampStr+".json"
         fullfilename = self.save_directory+filename

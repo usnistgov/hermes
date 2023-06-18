@@ -10,7 +10,9 @@ import numpy as np
 
 
 
-QM2_instrument = hermes.instruments.CHESSQM2Beamline(simulation = False,
+QM2_instrument = hermes.instruments.CHESSQM2Beamline(
+                                    simulation = False,
+                                    #sample_name = "CoCaAl020222p",
                                     wafer_directory = "/nfs/chess/id4baux/2023-2/sarker-3729-a/hermes_061623/coordinate/",
                                     wafer_coords_file = "XY_Coordinates_177.txt",
                                     #wafer_composition_file = "CombiView_Format_GeSbTe_Composition.txt",
@@ -27,7 +29,7 @@ domain = QM2_instrument.xy_locations.to_numpy()
 indexes = np.arange(0, domain.shape[0])
 
 #Choose the initial locations
-start_measurements = 4
+start_measurements = 10
 initialization_method = hermes.loopcontrols.RandomStart(domain, start_measurements)
 next_indexes = initialization_method.initialize()
 print("next_indexes =", next_indexes)
@@ -44,7 +46,7 @@ archiver = hermes.archive.CombiMappingModels(save_directory = "/nfs/chess/id4bau
 archiver.next_indexes = next_indexes
 archiver.write_metadata_file()
 
-AL_loops = 173
+AL_loops = 31
 print("Starting Loop")
 
 for n in range(AL_loops):
@@ -61,7 +63,7 @@ for n in range(AL_loops):
 
     cluster_method = hermes.clustering.RBPots(measurements=measurements, 
                                             measurements_distance_type= hermes.distance.CosineDistance(),
-                                            measurements_similarity_type= hermes.similarity.SquaredExponential(lengthscale=0.1),
+                                            measurements_similarity_type= hermes.similarity.SquaredExponential(lengthscale=0.01),
                                             locations = locations,
                                             resolution = 0.2,
                                             )
@@ -70,6 +72,8 @@ for n in range(AL_loops):
     cluster_method.get_local_membership_prob()
 
     classification_method = hermes.classification.HeteroscedasticGPC(
+        indexes = indexes,
+        measured_indexes = measured_indexes,
         locations = locations,
         labels = cluster_method.labels,
         domain = domain,

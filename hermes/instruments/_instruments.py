@@ -159,10 +159,10 @@ class CHESSQM2Beamline(PowderDiffractometer):
 
 
 
-    spec_data_dir = "/nfs/chess/id4b/2023-2/sarker-3729-a/"
-    spec_det_dir="/mnt/currentdaq/sarker-3729-a/"
+    spec_data_dir = "/nfs/chess/id4b/2023-2/sarker-3729-a/raw6M/"
+    spec_det_dir="/mnt/currentdaq/sarker-3729-a/raw6M/"
  
-    sample_name = "CoCaAl020222k"
+    sample_name = "CoCaAl020222_fly6"
     
 
 
@@ -194,7 +194,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
             self.specsession.run_cmd("p 'hello'")
             #self.specsession = spec(self.specname)
             self.specsession.run_cmd(f"cd {self.spec_data_dir}")
-            dir_exists = os.path.exists(f"{self.spec_data_dir}{self.sample_name}")
+            dir_exists = os.path.exists(f"{self.spec_data_dir+self.sample_name}")
             if dir_exists == False:
             	self.specsession.run_cmd(f"u mkdir {self.sample_name}")
             self.specsession.run_cmd(f"cd {self.sample_name}")
@@ -250,22 +250,43 @@ class CHESSQM2Beamline(PowderDiffractometer):
 
                 # Move to wafer coordinates
                 # print(idx, f"{row.x=}, {row.y=}")
-
                 self.specsession.run_cmd(f"umv waferx {row.x} wafery {row.y}")
                 self.specsession.run_cmd("opens")
                 self.specsession.run_cmd("pil_on")
-                self.specsession.run_cmd("tseries 2 3")
-                self.specsession.run_cmd("pil_off")
-                self.specsession.run_cmd("closes") 
-		
-                # sleep to let the image file save
-                time.sleep(10)                
+                mysamplepath = "pyspec/"
+                self.specsession.run_cmd(f"u mkdir {mysamplepath}")
+                mysample = self.sample_name
+                full_sample_path = mysamplepath+mysample
+                self.specsession.run_cmd(f"u mkdir -p {full_sample_path}")
+                time.sleep(5)
+                pilrampath = "/mnt/currentdaq/sarker-3729-a/" + mysamplepath + mysample
+                self.specsession.run_cmd(f"pil_setdir {pilrampath}")
+#                self.specsession.run_cmd("pil_fly_on")
+#                self.specsession.run_cmd("pil_settrig 'Mult. Trigger'")
 
+                self.specsession.run_cmd("flyscan th 4 26 440 2")
+                self.specsession.run_cmd("pil_off")
+                self.specsession.run_cmd("closes")
+
+                
+                
 		# integrate the images
-                image_file = site_dir + "/" + site_name + "_001" + "/" + site_name + "_PIL10_001_000.cbf"
+                #image_file = site_dir + "/" + site_name + "_001" + "/" + site_name + "_PIL10_001_000.cbf"
+                image_file = "/nfs/chess/id4b/2023-2/sarker-3729-a/" + mysamplepath + mysample
+                export_path = self.reduced_sample_dir + '/' + site_name + '/'  
                 os.mkdir(self.reduced_sample_dir + '/' + site_name)
-                label = site_name + "/" + site_name + '_PIL10_001_000'
-                measurement = data_reduction(image_file, poni_path, self.reduced_sample_dir,label = label,thbin = self.diffraction_space_bins)
+                label = site_name + '_001' + "/" + site_name + '_PIL10_001_000'
+                label2 = site_name + '_PIL10_001_000'
+
+                # sleep to let the image file save
+                time.sleep(5)       
+
+                try:
+                    measurement = data_reduction(image_file + '/' + label + '.cbf', poni_path, export_path,label = label2,thbin = self.diffraction_space_bins)
+                except:
+                    print('~~~~~~~~~~~~~~~~START WAIT~~~~~~~~~~~~~~~~~~~~~~')
+                    time.sleep(30)
+                    measurement = data_reduction(image_file + '/' + label + '.cbf', poni_path, export_path,label = label2,thbin = self.diffraction_space_bins)
                 measurements = np.concatenate((measurements, np.array(measurement).reshape(1,-1)), axis = 0)
 
                 # TODO: map sample reference frame to  motor coordinates
