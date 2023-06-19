@@ -1,6 +1,6 @@
 import hermes
 import numpy as np
-
+import pandas as pd
 #Set up the instrument 
 
 #sim_load_dir = "/nfs/chess/id4baux/2023-2/sarker-3729-a/hermes_061623/coordinate/"
@@ -28,22 +28,32 @@ domain = QM2_instrument.xy_locations.to_numpy()
 #Get the indexes in the domain:
 indexes = np.arange(0, domain.shape[0])
 
-#Choose the initial locations
-#start_measurements = 10
-start_measurements = domain.shape[0]
-initialization_method = hermes.loopcontrols.RandomStart(domain, start_measurements)
-next_indexes = initialization_method.initialize()
-print("next_indexes =", next_indexes)
-next_locations = domain[next_indexes]
+
 
 #Initialize containers for locations and measurements:
-measured_indexes = np.array([])
-locations = np.array([]).reshape(-1,domain.shape[1])
-measurements = np.array([]).reshape(-1, QM2_instrument.diffraction_space_bins)
-# picking up from run that stopped 
-#measured_indexes = np.array([14, 19, 43, 12, 70, 67, 42, 23, 21, 63])
+#measured_indexes = np.array([])
 #locations = np.array([]).reshape(-1,domain.shape[1])
 #measurements = np.array([]).reshape(-1, QM2_instrument.diffraction_space_bins)
+# picking up from run that stopped 
+measured_indexes = np.array([14, 19, 43, 12, 70, 67, 42, 23, 21, 63, 24])
+locations = domain[measured_indexes]
+measurements = np.array([]).reshape(-1, QM2_instrument.diffraction_space_bins)
+for idx in measured_indexes:
+    file_loc = f"/nfs/chess/id4baux/2023-2/sarker-3729-a/hermes_061623/AlZr_060823_1/AlZr_060823_1_{idx}/AlZr_060823_1_{idx}_PIL10_001_000_integrated.csv"
+    measurement = pd.read_table(file_loc, delimiter = ",")
+    measurement = measurement.to_numpy()[:,1].reshape(1,-1)
+    measurements = np.concatenate((measurements, measurement), axis=0)
+print(measurements.shape)
+
+#Choose the initial locations
+start_measurements = 1
+flag = True
+while flag == True:
+    initialization_method = hermes.loopcontrols.RandomStart(domain, start_measurements)
+    next_indexes = initialization_method.initialize()
+    flag = np.isin(measured_indexes, next_indexes)[0]
+    print("next_indexes =", next_indexes)
+    next_locations = domain[next_indexes]
 
 #Initialize the archiver
 archiver = hermes.archive.CombiMappingModels(save_directory = "/nfs/chess/id4baux/2023-2/sarker-3729-a/hermes_061623/models/",
@@ -51,8 +61,7 @@ archiver = hermes.archive.CombiMappingModels(save_directory = "/nfs/chess/id4bau
 archiver.next_indexes = next_indexes
 archiver.write_metadata_file()
 
-#AL_loops = 76 - start_measurements + 1
-AL_loops = 1
+AL_loops = 76 - start_measurements + 1
 print("Starting Loop")
 
 for n in range(AL_loops):

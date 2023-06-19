@@ -162,7 +162,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
     spec_data_dir = "/nfs/chess/id4b/2023-2/sarker-3729-a/raw6M/"
     spec_det_dir="/mnt/currentdaq/sarker-3729-a/raw6M/"
  
-    sample_name = "CoCaAl020222_fly6"
+    sample_name = "CuV_multi_120522"
     
 
 
@@ -264,7 +264,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
 #                self.specsession.run_cmd("pil_fly_on")
 #                self.specsession.run_cmd("pil_settrig 'Mult. Trigger'")
 
-                self.specsession.run_cmd("flyscan th 4 26 440 2")
+                self.specsession.run_cmd("flyscan th 4 26 440 1")
                 self.specsession.run_cmd("pil_off")
                 self.specsession.run_cmd("closes")
 
