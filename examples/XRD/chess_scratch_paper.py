@@ -63,16 +63,16 @@ classification_method.predict_unmeasured()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #### Asperational ML as a Service Workflow #####
 
-#Train on the measured locations
-model_path = "/some/path/to/save/the/model/"
-classification_method. ML_service_train(model_path)
+# #Train on the measured locations
+# model_path = "/some/path/to/save/the/model/"
+# classification_method.ML_service_train(model_path)
 
-#Predict the lables everywhere in the Domain
-domain_path = "/some/path/to/save/the/data/of/the/domain/locations/"
-classification_method.ML_as_service_predict(domain_path)
+# #Predict the lables everywhere in the Domain
+# domain_path = "/some/path/to/save/the/data/of/the/domain/locations/"
+# classification_method.ML_as_service_predict(domain_path)
 
-#Predict the lables at just the unmeasured locations in the Domain
-unmeasured_locations_path = "/some/path/to/save/data/of/unmeasured/locations/"
-classification_method.ML_as_service_predict_unmeasured(unmeasured_locations_path)
+# #Predict the lables at just the unmeasured locations in the Domain
+# unmeasured_locations_path = "/some/path/to/save/data/of/unmeasured/locations/"
+# classification_method.ML_as_service_predict_unmeasured(unmeasured_locations_path)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
