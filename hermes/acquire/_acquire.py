@@ -117,7 +117,7 @@ class ProbabilityofImprovement(Acquisition):
 
 @dataclass
 class ExpectedImprovement(Acquisition):
-    measurements: np.array
+    measurements: np.ndarray
 
     def calculate(self):
         y_best = np.max(self.measurements)
