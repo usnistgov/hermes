@@ -8,11 +8,20 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.base import Analysis
 
-from .heteroscedastic_gpc import HeteroscedasticMultiClass, HeteroscedasticRobustMax
-
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
+import logging
 
-import gpflow
+logger = logging.getLogger("hermes")
+
+GPC = False
+try:
+    import gpflow
+
+    from .heteroscedastic_gpc import HeteroscedasticMultiClass, HeteroscedasticRobustMax
+except ModuleNotFoundError:
+    logger.warning("GPFlow is not installed.")
+else:
+    GPC = True
 
 
 @dataclass
@@ -20,8 +29,8 @@ class Classification(Analysis):
     """Base level class for classification - predicting labels of data from known examples"""
 
     # Book-keeping
-    indexes: np.ndarray # Indexes of all the possible 
-    measured_indexes: np.ndarray # Indexes that have been measured
+    indexes: np.ndarray  # Indexes of all the possible
+    measured_indexes: np.ndarray  # Indexes that have been measured
 
     # Training data
     locations: np.ndarray  # Locations of the oberservations
@@ -29,6 +38,11 @@ class Classification(Analysis):
 
     # Test data
     domain: np.ndarray  # The set of all possible locations to measure
+
+    def __post_init__(self):
+        """Check  measured_indexes are 1d"""
+        if not self.indexes.ndim == 1:
+            raise ValueError("invalid dimensions for indexes, must be 1d")
 
     # Unmeasured_Locations
     @property
@@ -40,7 +54,7 @@ class Classification(Analysis):
 
         unmeasured = np.array(list(domain_set - measured_set))
         return unmeasured
-    
+
     @property
     def unmeasured_locations(self):
         """Find all the indexes in the domain that haven't been measured."""
@@ -56,284 +70,287 @@ class Classification(Analysis):
         # Useful to convert locations requested by acquisition functions to an index in the entire domain.
         indexes = []
         for i in range(locations.shape[0]):
-            index = np.argmax(np.prod(self.domain == locations[i, :], axis = 1))
+            index = np.argmax(np.prod(self.domain == locations[i, :], axis=1))
             indexes.append(index)
 
         return indexes
 
 
-@dataclass
-class GPC(Classification):
-    """A class for all Gaussian Processes for clasification."""
+if GPC:
 
-    ### Set up the GPC ####
-    # RBF Kernel
-    lengthscales = 1.0
-    variance = 1.0
-
-    kernel = gpflow.kernels.RBF(lengthscales=lengthscales, variance=variance)
-
-    def predict(self):
-        """Predict the model accross the domain."""
-
-        mean, var = self.model.predict_y(self.domain)
-        self.mean = mean
-        self.var = var
-
-    def predict_unmeasured(self):
-        """Predict the model on the unmeasured locations of the domain"""
-        # Predict the classes in the unmeasured locations
-        self.mean_unmeasured, var_s = self.model.predict_y(self.unmeasured_locations)
-
-        # Sum the variances across the classes
-        self.var_unmeasured = np.sum(var_s, axis=1).reshape(-1, 1)
-
-    # def ML_as_service_predict(self):
-    #     #Invoke the model from the ML as service run:
-    #     model_name = self.model_name
-
-    #     #some http command to call the model_name
-
-    #     self.mean = mean
-    #     self.var = var
-
-
-
-@dataclass
-class HomoscedasticGPC(GPC):
-    """A class for GPC's where the uncertainty on the labels is the same everywhere."""
-
-    def train(self):
-        # Number of classes
-        C = np.unique(self.labels)
-        # Tensor of the lables
-        Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
-
-        data = (self.locations.astype("float"), Y)
+    @dataclass
+    class GPC(Classification):
+        """A class for all Gaussian Processes for clasification."""
 
         ### Set up the GPC ####
-        # Robustmax Multiclass Likelihood
-        invlink = gpflow.likelihoods.RobustMax(C)  # Robustmax inverse link function
-        likelihood = gpflow.likelihoods.MultiClass(
-            C, invlink=invlink
-        )  # Multiclass likelihood
+        # RBF Kernel
+        lengthscales = 1.0
+        variance = 1.0
 
-        m = gpflow.models.VGP(
-            data=data,
-            kernel=self.kernel,
-            likelihood=likelihood,
-            num_latent_gps=C,
-        )
+        kernel = gpflow.kernels.RBF(lengthscales=lengthscales, variance=variance)
 
-        #### Train the GPC ####
-        opt = gpflow.optimizers.Scipy()
+        def predict(self):
+            """Predict the model accross the domain."""
 
-        opt_logs = opt.minimize(
-            m.training_loss_closure(),
-            m.trainable_variables,
-            method="tnc",
-            # options=dict(maxiter=1000)
-        )
+            mean, var = self.model.predict_y(self.domain)
+            self.mean = mean
+            self.var = var
 
-        self.model = m
+        def predict_unmeasured(self):
+            """Predict the model on the unmeasured locations of the domain"""
+            # Predict the classes in the unmeasured locations
+            self.mean_unmeasured, var_s = self.model.predict_y(
+                self.unmeasured_locations
+            )
 
+            # Sum the variances across the classes
+            self.var_unmeasured = np.sum(var_s, axis=1).reshape(-1, 1)
 
+        # def ML_as_service_predict(self):
+        #     #Invoke the model from the ML as service run:
+        #     model_name = self.model_name
 
-@dataclass
-class SparceHomoscedasticGPC(GPC):
-    """A class for Sparce GPC's where the uncertainty on the labels is the same everywhere."""
+        #     #some http command to call the model_name
 
-    def train(self):
-        """Use the training data to train the model."""
+        #     self.mean = mean
+        #     self.var = var
 
-        # Number of classes
-        C = np.unique(self.labels)
-        # Tensor of the lables
-        Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
+    @dataclass
+    class HomoscedasticGPC(GPC):
+        """A class for GPC's where the uncertainty on the labels is the same everywhere."""
 
-        data = (self.locations.astype("float"), Y)
+        def train(self):
+            # Number of classes
+            C = np.unique(self.labels)
+            # Tensor of the lables
+            Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
 
-        ### Set up the GPC ####
-        # Robustmax Multiclass Likelihood
-        invlink = gpflow.likelihoods.RobustMax(C)  # Robustmax inverse link function
-        likelihood = gpflow.likelihoods.MultiClass(
-            C, invlink=invlink
-        )  # Multiclass likelihood
+            data = (self.locations.astype("float"), Y)
 
-        M = int(0.4 * Y.shape[0])  # Number of inducing points
-        Z1 = np.random.permutation(inputs)  # Generate a random list of input locations
-        Z = Z1[
-            :M, :
-        ].copy()  # Take the first M locations of Z1 to initialize the inducing points
+            ### Set up the GPC ####
+            # Robustmax Multiclass Likelihood
+            invlink = gpflow.likelihoods.RobustMax(C)  # Robustmax inverse link function
+            likelihood = gpflow.likelihoods.MultiClass(
+                C, invlink=invlink
+            )  # Multiclass likelihood
 
-        model = gpflow.models.SVGP(
-            kernel,
-            likelihood,
-            Z,
-            num_latent_gps=C,
-        )
+            m = gpflow.models.VGP(
+                data=data,
+                kernel=self.kernel,
+                likelihood=likelihood,
+                num_latent_gps=C,
+            )
 
-        #### Train the GPC ####
-        opt = gpflow.optimizers.Scipy()
+            #### Train the GPC ####
+            opt = gpflow.optimizers.Scipy()
 
-        opt_logs = opt.minimize(
-            model.training_loss_closure(),
-            model.trainable_variables,
-            method="tnc",
-            options=dict(maxiter=1000),
-        )
+            opt_logs = opt.minimize(
+                m.training_loss_closure(),
+                m.trainable_variables,
+                method="tnc",
+                # options=dict(maxiter=1000)
+            )
 
-        self.model = model
+            self.model = m
 
+    @dataclass
+    class SparceHomoscedasticGPC(GPC):
+        """A class for Sparce GPC's where the uncertainty on the labels is the same everywhere."""
 
-@dataclass
-class HeteroscedasticGPC(GPC):
-    """A class for GPC's where the training data has known uncertainty.
-    Specifically, at every observation there is a probabilistic assignment of the labels.
-    """
+        def train(self):
+            """Use the training data to train the model."""
 
-    # Probabilistic labeling
-    probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+            # Number of classes
+            C = np.unique(self.labels)
+            # Tensor of the lables
+            Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
 
-    # def __init__(self, probabilities):
-    #     self.probabilities = probabilities
-    #     super().__init__(**kwargs)
+            data = (self.locations.astype("float"), Y)
 
-    # Train the models
-    def train(self):
-        # Tensor of the lables
-        Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
-        # Tensor of the probabilities
-        Sigma_y = tf.convert_to_tensor(self.probabilities)
-        # Number of clusters
-        C = len(self.probabilities[0, :])
+            ### Set up the GPC ####
+            # Robustmax Multiclass Likelihood
+            invlink = gpflow.likelihoods.RobustMax(C)  # Robustmax inverse link function
+            likelihood = gpflow.likelihoods.MultiClass(
+                C, invlink=invlink
+            )  # Multiclass likelihood
 
-        # Package training data
-        data = (self.locations.astype("float"), Y)
+            M = int(0.4 * Y.shape[0])  # Number of inducing points
+            Z1 = np.random.permutation(
+                inputs
+            )  # Generate a random list of input locations
+            Z = Z1[
+                :M, :
+            ].copy()  # Take the first M locations of Z1 to initialize the inducing points
 
-        ### Set up the GPC ####
-        # Robustmax Multiclass Likelihood
-        invlink = HeteroscedasticRobustMax(
-            C, Sigma_y
-        )  # Robustmax inverse link function
-        likelihood = HeteroscedasticMultiClass(
-            C, invlink=invlink
-        )  # Multiclass likelihood
+            model = gpflow.models.SVGP(
+                kernel,
+                likelihood,
+                Z,
+                num_latent_gps=C,
+            )
 
-        m = gpflow.models.VGP(
-            data=data,
-            kernel=self.kernel,
-            likelihood=likelihood,
-            num_latent_gps=C,
-        )
+            #### Train the GPC ####
+            opt = gpflow.optimizers.Scipy()
 
-        #### Train the GPC ####
-        opt = gpflow.optimizers.Scipy()
+            opt_logs = opt.minimize(
+                model.training_loss_closure(),
+                model.trainable_variables,
+                method="tnc",
+                options=dict(maxiter=1000),
+            )
 
-        opt_logs = opt.minimize(
-            m.training_loss_closure(),
-            m.trainable_variables,
-            method="TNC",
-            # options=dict(maxiter=1000)
-        )
+            self.model = model
 
-        self.model = m
+    @dataclass
+    class HeteroscedasticGPC(GPC):
+        """A class for GPC's where the training data has known uncertainty.
+        Specifically, at every observation there is a probabilistic assignment of the labels.
+        """
 
-    # def ML_service_train(self):
-    #     # Tensor of the lables
-    #     Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
-    #     # Tensor of the probabilities
-    #     Sigma_y = tf.convert_to_tensor(self.probabilities)
-    #     # Number of clusters
-    #     C = len(self.probabilities[0, :])
+        # Probabilistic labeling
+        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
-    #     # Package training data
-    #     data = (self.locations.astype("float"), Y)
+        # def __init__(self, probabilities):
+        #     self.probabilities = probabilities
+        #     super().__init__(**kwargs)
 
-    #     ### Set up the GPC ####
-    #     # Robustmax Multiclass Likelihood
-    #     invlink = HeteroscedasticRobustMax(
-    #         C, Sigma_y
-    #     )  # Robustmax inverse link function
-    #     likelihood = HeteroscedasticMultiClass(
-    #         C, invlink=invlink
-    #     )  # Multiclass likelihood
+        # Train the models
+        def train(self):
+            # Tensor of the lables
+            Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
+            # Tensor of the probabilities
+            Sigma_y = tf.convert_to_tensor(self.probabilities)
+            # Number of clusters
+            C = len(self.probabilities[0, :])
 
-    #     m = gpflow.models.VGP(
-    #         data=data,
-    #         kernel=self.kernel,
-    #         likelihood=likelihood,
-    #         num_latent_gps=C,
-    #     )
+            # Package training data
+            data = (self.locations.astype("float"), Y)
 
-    #     #### Train the GPC ####
-    #     opt = gpflow.optimizers.Scipy()
+            ### Set up the GPC ####
+            # Robustmax Multiclass Likelihood
+            invlink = HeteroscedasticRobustMax(
+                C, Sigma_y
+            )  # Robustmax inverse link function
+            likelihood = HeteroscedasticMultiClass(
+                C, invlink=invlink
+            )  # Multiclass likelihood
 
-    #     opt_logs = opt.minimize(
-    #         m.training_loss_closure(),
-    #         m.trainable_variables,
-    #         method="TNC",
-    #         # options=dict(maxiter=1000)
-    #     )
+            m = gpflow.models.VGP(
+                data=data,
+                kernel=self.kernel,
+                likelihood=likelihood,
+                num_latent_gps=C,
+            )
 
-    #     #Send model to ML as service
-    #     ## some http command:
+            #### Train the GPC ####
+            opt = gpflow.optimizers.Scipy()
 
-    #     model_name = ###
-    #     self.model_name = model_name
-    #     self.model = m
+            opt_logs = opt.minimize(
+                m.training_loss_closure(),
+                m.trainable_variables,
+                method="TNC",
+                # options=dict(maxiter=1000)
+            )
 
-@dataclass
-class SparceHeteroscedasticGPC(GPC):
-    """A class for sparce GPC's where the training data has known uncertainty.
-    Specifically, at every observation there is a probabilistic assignment of the labels.
-    """
+            self.model = m
 
-    # Probabilistic labeling
-    probabilities: np.array  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        # def ML_service_train(self):
+        #     # Tensor of the lables
+        #     Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
+        #     # Tensor of the probabilities
+        #     Sigma_y = tf.convert_to_tensor(self.probabilities)
+        #     # Number of clusters
+        #     C = len(self.probabilities[0, :])
 
-    # Train the models
-    def train(self):
-        # Tensor of the lables
-        Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
-        # Tensor of the probabilities
-        Sigma_y = tf.convert_to_tensor(self.probabilities)
-        # Number of clusters
-        C = len(self.probabilities[0, :])
+        #     # Package training data
+        #     data = (self.locations.astype("float"), Y)
 
-        # Package training data
-        data = (self.locations.astype("float"), Y)
+        #     ### Set up the GPC ####
+        #     # Robustmax Multiclass Likelihood
+        #     invlink = HeteroscedasticRobustMax(
+        #         C, Sigma_y
+        #     )  # Robustmax inverse link function
+        #     likelihood = HeteroscedasticMultiClass(
+        #         C, invlink=invlink
+        #     )  # Multiclass likelihood
 
-        ### Set up the GPC ####
-        # Robustmax Multiclass Likelihood
-        invlink = HeteroscedasticRobustMax(
-            C, Sigma_y
-        )  # Robustmax inverse link function
-        likelihood = HeteroscedasticMultiClass(
-            C, invlink=invlink
-        )  # Multiclass likelihood
+        #     m = gpflow.models.VGP(
+        #         data=data,
+        #         kernel=self.kernel,
+        #         likelihood=likelihood,
+        #         num_latent_gps=C,
+        #     )
 
-        M = int(0.4 * Y.shape[0])  # Number of inducing points
-        Z1 = np.random.permutation(inputs)  # Generate a random list of input locations
-        Z = Z1[
-            :M, :
-        ].copy()  # Take the first M locations of Z1 to initialize the inducing points
+        #     #### Train the GPC ####
+        #     opt = gpflow.optimizers.Scipy()
 
-        m = gpflow.models.SVGP(
-            self.kernel,
-            likelihood,
-            Z,
-            num_latent_gps=C,
-        )
+        #     opt_logs = opt.minimize(
+        #         m.training_loss_closure(),
+        #         m.trainable_variables,
+        #         method="TNC",
+        #         # options=dict(maxiter=1000)
+        #     )
 
-        #### Train the GPC ####
-        opt = gpflow.optimizers.Scipy()
+        #     #Send model to ML as service
+        #     ## some http command:
 
-        opt_logs = opt.minimize(
-            m.training_loss_closure(),
-            m.trainable_variables,
-            method="tnc",
-            options=dict(maxiter=1000),
-        )
+        #     model_name = ###
+        #     self.model_name = model_name
+        #     self.model = m
 
-        self.model = m
+    @dataclass
+    class SparceHeteroscedasticGPC(GPC):
+        """A class for sparce GPC's where the training data has known uncertainty.
+        Specifically, at every observation there is a probabilistic assignment of the labels.
+        """
+
+        # Probabilistic labeling
+        probabilities: np.array  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+
+        # Train the models
+        def train(self):
+            # Tensor of the lables
+            Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
+            # Tensor of the probabilities
+            Sigma_y = tf.convert_to_tensor(self.probabilities)
+            # Number of clusters
+            C = len(self.probabilities[0, :])
+
+            # Package training data
+            data = (self.locations.astype("float"), Y)
+
+            ### Set up the GPC ####
+            # Robustmax Multiclass Likelihood
+            invlink = HeteroscedasticRobustMax(
+                C, Sigma_y
+            )  # Robustmax inverse link function
+            likelihood = HeteroscedasticMultiClass(
+                C, invlink=invlink
+            )  # Multiclass likelihood
+
+            M = int(0.4 * Y.shape[0])  # Number of inducing points
+            Z1 = np.random.permutation(
+                inputs
+            )  # Generate a random list of input locations
+            Z = Z1[
+                :M, :
+            ].copy()  # Take the first M locations of Z1 to initialize the inducing points
+
+            m = gpflow.models.SVGP(
+                self.kernel,
+                likelihood,
+                Z,
+                num_latent_gps=C,
+            )
+
+            #### Train the GPC ####
+            opt = gpflow.optimizers.Scipy()
+
+            opt_logs = opt.minimize(
+                m.training_loss_closure(),
+                m.trainable_variables,
+                method="tnc",
+                options=dict(maxiter=1000),
+            )
+
+            self.model = m

@@ -6,12 +6,19 @@ Created on Tue Sep 27 11:57:27 2022
 @author: Austin McDannald
 """
 
+import logging
 from dataclasses import field
 from typing import Any, Optional
 
+logger = logging.getLogger("hermes")
+
 import networkx as nx
 import numpy as np
-from cdlib import algorithms
+
+try:
+    from cdlib import algorithms
+except ModuleNotFoundError:
+    logger.warning("No CDLIB found")
 from pydantic.dataclasses import dataclass as typesafedataclass
 from scipy.spatial import Delaunay
 from sklearn.cluster import SpectralClustering
