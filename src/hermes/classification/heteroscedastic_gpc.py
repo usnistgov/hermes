@@ -39,6 +39,8 @@ try:
     # from gpflow.config import default_float
 except ModuleNotFoundError:
     raise ModuleNotFoundError("GPFlow needs to be installed")
+except BaseException as exc:
+    raise exc
 
 
 # """Build an inverse-link function for the Heteroscedastic Gaussian Process"""
