@@ -3,32 +3,44 @@ Each training data point has a location, label, an the vector of
 multi-class distribution of probabilities of all the possible labels.
 These probabilites are propegated through the training, and predictions of the GPC."""
 
+import logging
+import warnings
 
 import numpy as np
-
 import tensorflow as tf
-import warnings
+
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
+logger = logging.getLogger("hermes")
 
 from typing import Any, Optional
+
 # Define the new classes for GPflow
 # from gpflow import Module, Parameter
-from gpflow.likelihoods import Likelihood
-import tensorflow_probability as tfp
-from check_shapes import check_shapes, inherit_check_shapes
 
-from gpflow.likelihoods.base import MeanAndVariance, Module 
-from gpflow import Parameter 
-from gpflow.base import TensorType
-from gpflow.config import default_float
-from gpflow.quadrature import hermgauss
-from gpflow.utilities import to_default_float, to_default_int
-from gpflow.likelihoods.base import Likelihood, MonteCarloLikelihood
+try:
+    import tensorflow_probability as tfp
+    from check_shapes import check_shapes, inherit_check_shapes
+    from gpflow import Parameter
+    from gpflow.base import TensorType
+    from gpflow.config import default_float
 
-# from gpflow.utilities import to_default_float, to_default_int
-# from gpflow.quadrature import hermgauss
-from gpflow.likelihoods import RobustMax
-# from gpflow.config import default_float
+    # from gpflow.utilities import to_default_float, to_default_int
+    # from gpflow.quadrature import hermgauss
+    from gpflow.likelihoods import Likelihood, RobustMax
+    from gpflow.likelihoods.base import (
+        Likelihood,
+        MeanAndVariance,
+        Module,
+        MonteCarloLikelihood,
+    )
+    from gpflow.quadrature import hermgauss
+    from gpflow.utilities import to_default_float, to_default_int
+
+    # from gpflow.config import default_float
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("GPFlow needs to be installed")
+except BaseException as exc:
+    raise exc
 
 
 # """Build an inverse-link function for the Heteroscedastic Gaussian Process"""
@@ -41,7 +53,7 @@ from gpflow.likelihoods import RobustMax
 #     y_i = (1-epsilon)  i == argmax(f)
 #           epsilon/(k-1)  otherwise
 #     where k is the number of classes.
-    
+
 #     Sigma_y is the label probabilities
 #     """
 
@@ -75,13 +87,13 @@ from gpflow.likelihoods import RobustMax
 #     def prob_is_largest(self, Y, mu, var, gh_x, gh_w):
 #         Y = to_default_int(Y)
 #         # work out what the mean and variance is of the indicated latent function.
-#         '''If we have the class membership probabilties, train on those. 
+#         '''If we have the class membership probabilties, train on those.
 #         Otherwise use a one hot encoding of the labels'''
 #         if mu.shape == self.Sigma_y.shape:
 #           oh_on = self.Sigma_y
 #         else:
 #           oh_on = tf.cast(tf.one_hot(tf.reshape(Y, (-1,)), self.num_classes, 1.0, 0.0), dtype=mu.dtype)
-        
+
 #         mu_selected = tf.reduce_sum(oh_on * mu, 1)
 #         var_selected = tf.reduce_sum(oh_on * var, 1)
 
@@ -163,10 +175,9 @@ from gpflow.likelihoods import RobustMax
 #     def _conditional_variance(self, F):
 #         p = self.conditional_mean(F)
 #         return p - tf.square(p)
-    
 
 
-    ###################################################################################
+###################################################################################
 class HeteroscedasticRobustMax(Module):
     r"""
     This class represent a multi-class inverse-link function. Given a vector
@@ -193,7 +204,9 @@ class HeteroscedasticRobustMax(Module):
     @check_shapes(
         "epsilon: []",
     )
-    def __init__(self, num_classes: int, Sigma_y, epsilon: float = 1e-3, **kwargs: Any) -> None:
+    def __init__(
+        self, num_classes: int, Sigma_y, epsilon: float = 1e-3, **kwargs: Any
+    ) -> None:
         """
         `epsilon` represents the fraction of 'errors' in the labels of the
         dataset. This may be a hard parameter to optimize, so by default
@@ -202,10 +215,13 @@ class HeteroscedasticRobustMax(Module):
         super().__init__(**kwargs)
         transform = tfp.bijectors.Sigmoid()
         prior = tfp.distributions.Beta(to_default_float(0.2), to_default_float(5.0))
-        self.epsilon = Parameter(epsilon, transform=transform, prior=prior, trainable=False)
+        self.epsilon = Parameter(
+            epsilon, transform=transform, prior=prior, trainable=False
+        )
         self.num_classes = num_classes
         self._squash = 1e-6
-        self.Sigma_y = Sigma_y #Sigma_y is the label probabilities
+        self.Sigma_y = Sigma_y  # Sigma_y is the label probabilities
+
     @check_shapes(
         "F: [broadcast batch..., latent_dim]",
         "return: [batch..., latent_dim]",
@@ -236,17 +252,19 @@ class HeteroscedasticRobustMax(Module):
         "gh_w: [n_quad_points]",
         "return: [batch..., observation_dim]",
     )
-
     def prob_is_largest(self, Y, mu, var, gh_x, gh_w):
         Y = to_default_int(Y)
         # work out what the mean and variance is of the indicated latent function.
-        '''If we have the class membership probabilties, train on those. 
-        Otherwise use a one hot encoding of the labels'''
+        """If we have the class membership probabilties, train on those. 
+        Otherwise use a one hot encoding of the labels"""
         if mu.shape == self.Sigma_y.shape:
-          oh_on = self.Sigma_y
+            oh_on = self.Sigma_y
         else:
-          oh_on = tf.cast(tf.one_hot(tf.reshape(Y, (-1,)), self.num_classes, 1.0, 0.0), dtype=mu.dtype)
-        
+            oh_on = tf.cast(
+                tf.one_hot(tf.reshape(Y, (-1,)), self.num_classes, 1.0, 0.0),
+                dtype=mu.dtype,
+            )
+
         mu_selected = tf.reduce_sum(oh_on * mu, 1)
         var_selected = tf.reduce_sum(oh_on * var, 1)
 
@@ -269,7 +287,9 @@ class HeteroscedasticRobustMax(Module):
         cdfs = cdfs * tf.expand_dims(oh_off, 2) + tf.expand_dims(oh_on, 2)
 
         # take the product over the latent functions, and the sum over the GH grid.
-        return tf.reduce_prod(cdfs, axis=[1]) @ tf.reshape(gh_w / np.sqrt(np.pi), (-1, 1))
+        return tf.reduce_prod(cdfs, axis=[1]) @ tf.reshape(
+            gh_w / np.sqrt(np.pi), (-1, 1)
+        )
 
 
 class HeteroscedasticMultiClass(Likelihood):
@@ -283,7 +303,9 @@ class HeteroscedasticMultiClass(Likelihood):
         For most problems, the stochastic `Softmax` likelihood may be more
         appropriate (note that you then cannot use Scipy optimizer).
         """
-        super().__init__(input_dim=None, latent_dim=num_classes, observation_dim=None, **kwargs)
+        super().__init__(
+            input_dim=None, latent_dim=num_classes, observation_dim=None, **kwargs
+        )
         self.num_classes = num_classes
         self.num_gauss_hermite_points = 20
 
@@ -322,7 +344,10 @@ class HeteroscedasticMultiClass(Likelihood):
             tf.fill(tf.stack([tf.shape(Fmu)[0], 1]), np.array(i, dtype=np.int64))
             for i in range(self.num_classes)
         ]
-        ps = [self._predict_non_logged_density(X, Fmu, Fvar, po) for po in possible_outputs]
+        ps = [
+            self._predict_non_logged_density(X, Fmu, Fvar, po)
+            for po in possible_outputs
+        ]
         ps = tf.transpose(tf.stack([tf.reshape(p, (-1,)) for p in ps]))
         return ps, ps - tf.square(ps)
 
