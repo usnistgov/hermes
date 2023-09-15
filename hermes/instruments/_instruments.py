@@ -10,8 +10,8 @@ import time
 
 from hermes.utils import _check_attr
 
-# from . import PySpecClient
-# from pyspec.client.SpecConnection import SpecConnection
+from . import PySpecClient
+from pyspec.client.SpecConnection import SpecConnection
 
 # conditional import of pyspec to support testing on Windows with simulation mode
 try:
