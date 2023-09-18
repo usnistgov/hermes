@@ -1,28 +1,25 @@
 """Top-level package for Hermes Python."""
-from . import base
+from pipelines import Pipeline
 
-#For archiving results
-from . import archive
-
-#For comparison measures
-from . import distance
-from . import similarity
-
-#For data analysis tasks
-from . import clustering
-from . import classification
-from . import acquire
-
-#For controling instruments
-from . import instruments
-
-#For builing autonomous loops
-from . import loopcontrols
-from . import pipelines
-
-#For various convience functions
-from . import utils
-
+# For various convience functions
+# For builing autonomous loops
+# For controling instruments
+# For data analysis tasks
+# For comparison measures
+# For archiving results
+from . import (
+    acquire,
+    archive,
+    base,
+    classification,
+    clustering,
+    distance,
+    instruments,
+    loopcontrols,
+    pipelines,
+    similarity,
+    utils,
+)
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
@@ -39,5 +36,6 @@ __all__ = [
     "instruments",
     "loopcontrols",
     "pipelines",
+    "Pipeline",
     "utils",
 ]
