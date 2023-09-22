@@ -1,5 +1,4 @@
 """Top-level package for Hermes Python."""
-from pipelines import Pipeline
 
 # For various convience functions
 # For builing autonomous loops

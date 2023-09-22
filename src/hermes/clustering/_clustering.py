@@ -376,17 +376,17 @@ class ContiguousFixedKClustering(ContiguousCluster):
 class Spectral(ContiguousFixedKClustering):
     """Spectral Clustering."""
 
-    def cluster(self, graph: nx.Graph, n_clusters: int, **kwargs):
+    def cluster(self, n_clusters: int, **kwargs):
         """Spectral Clustering."""
         # matrix = nx.adjacency_matrix(graph, weight="Weight")  # type: ignore
         # affinity = matrix.toarray()
-        affinity = nx.to_numpy_array(graph, weight="Weight")  # type: ignore
-        # Q?
+        affinity = nx.to_numpy_array(self.graph, weight="Weight")  # type: ignore
 
         clusters = SpectralClustering(n_clusters, affinity="precomputed", **kwargs).fit(
             affinity
         )
         labels = clusters.labels_
+        self.get_local_membership_prob()
         return labels
 
 
@@ -414,6 +414,7 @@ class RBPots(ContiguousCommunityDiscovery):
                 nx.set_node_attributes(G, {q: i}, name="Labels")
         # Extract the labels
         self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+        self.get_local_membership_prob()
 
 
 @typesafedataclass(config=_Config)
@@ -429,6 +430,7 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
         G = self.graph
         K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
         labels = self.method(K)
+        self.get_local_membership_prob()
 
 
 #     @classmethod

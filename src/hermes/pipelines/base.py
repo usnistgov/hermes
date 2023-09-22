@@ -14,7 +14,8 @@ from hermes.classification import Classification
 from hermes.clustering import Cluster
 from hermes.distance import BaseDistance
 from hermes.instruments import Instrument
-from hermes.loopcontrols import BaseLoopControl, Initializer
+
+# from hermes.loopcontrols import BaseLoopControl, Initializer
 from hermes.similarity import BaseSimilarity
 
 # @dataclass
@@ -35,20 +36,30 @@ Pipeline = ForwardRef("Pipeline")
 Convergence = ForwardRef("Convergence")
 
 
-@typesafe_dataclass
+class _Config:  # pylint: disable=too-few-public-methods
+    arbitrary_types_allowed = True
+    # validate_assignment = True
+
+
+@typesafe_dataclass(config=_Config)
 class Pipeline:
     """Custom Pipeline Class."""
 
     instrument: Optional[Type[Instrument]] = None
     domain: Optional[np.ndarray] = None
-    init_method: Optional[Type[Initializer]] = None
-    data_analysis: Optional[Pipeline] = None
-    al_loops: Optional[int] = None
-    convergence: Optional[Convergence] = None
-    cluster_method: Optional[Type[Cluster]] = None
-    classification_method: Optional[Type[Classification]] = None
-    acquisition_method: Optional[Type[Acquisition]] = None
-    archiver = Optional[Type[Archiver]] = None
+
+
+class ClusterClassification(Pipeline):
+    """Cluster-Classification Pipeline."""
+
+    cluster_method: Type[Cluster] = None
+    classification_method: Type[Classification] = None
+    archiver: Type[Archiver] = None
+
+    def __init__(self, *args, **kwargs):
+        print("ClusterClassification init")
+        print(f"args->{args}")
+        return super().__init__(*args, **kwargs)
 
 
 # subclass into: active learning, clustering classifi
@@ -58,8 +69,5 @@ class Pipeline:
 #
 #
 
-mypipelinePipeline(instrument=)
-mypipeline.method="active learning"
-mypipeline.data_analysis=[ClusterClassification(), Acquire(), Archive()]
 # @typesafe_dataclass
 # class PhaseMappingPipeline(Pipeline):

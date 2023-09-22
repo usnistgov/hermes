@@ -7,6 +7,7 @@ Created on Tue Sep 27 12:15:35 2022
 from hermes.base.analysis import Analysis
 from hermes.base.ds import BaseDS
 from hermes.base.pipelines import BaseDataPipeline
-from hermes.base.archive import BaseArchive
 
-__all__ = ["Analysis", "BaseDS", "BaseDataPipeline", "BaseArchive"]
+# from hermes.base.archive import BaseArchive
+
+__all__ = ["Analysis", "BaseDS", "BaseDataPipeline"]
