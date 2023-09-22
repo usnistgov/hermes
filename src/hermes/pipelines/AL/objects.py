@@ -21,13 +21,13 @@ class AL(base.Pipeline):
     init_method: Type[Initializer] = None
     archive_method: Type[Archiver] = None
     data_analysis: Type[base.Pipeline] = field(init=False)
+    # TODO own data archive that takes/returns dict
 
 
-class ALClusterClassification(AL):
-    """Active Learning ClusterClassification Class."""
+# class ALClusterClassification(AL):
+#     """Active Learning ClusterClassification Class."""
 
-    data_analysis: Optional[Type[base.ClusterClassification]] = None
-    # TODO own data archive
+#     data_analysis: Optional[Type[base.ClusterClassification]] = None
 
 
 # class ALMeta(Pipeline):
