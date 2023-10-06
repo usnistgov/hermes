@@ -22,6 +22,9 @@ class Exhaustive(base.Pipeline):
     parallel: bool = False
 
 
+# add comments to indicate below is for convenience
+
+
 @typesafe_dataclass(config=_Config)
 class ExhaustiveClusterClassification(Exhaustive):
     """Active Learning ClusterClassification Class."""
