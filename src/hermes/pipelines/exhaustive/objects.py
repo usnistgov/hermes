@@ -6,8 +6,6 @@ from typing import Optional, Type
 from pydantic.dataclasses import dataclass as typesafe_dataclass
 
 import hermes.pipelines.base as base
-from hermes.archive import Archiver
-from hermes.loopcontrols import Initializer
 
 
 class _Config:  # pylint: disable=too-few-public-methods
@@ -16,52 +14,51 @@ class _Config:  # pylint: disable=too-few-public-methods
 
 
 @typesafe_dataclass(config=_Config)
-class AL(base.Pipeline):
-    """Metaclass for AL."""
+class Exhaustive(base.Pipeline):
+    """Metaclass for Exhaustive (For-loop)."""
 
-    init_method: Type[Initializer] = None
-    archive_method: Type[Archiver] = None
+    n: int = 1
     data_analysis: Type[base.Pipeline] = field(init=False)
-    # TODO own data archive that takes/returns dict
+    parallel: bool = False
 
 
 @typesafe_dataclass(config=_Config)
-class ALClusterClassification(AL):
+class ExhaustiveClusterClassification(Exhaustive):
     """Active Learning ClusterClassification Class."""
 
     data_analysis: Optional[Type[base.ClusterClassification]] = None
 
 
 @typesafe_dataclass(config=_Config)
-class ALRegression(AL):
+class ExhaustiveRegression(Exhaustive):
     """Active Learning Regression Class."""
 
     data_analysis: Optional[Type[base.Regression]] = None
 
 
 @typesafe_dataclass(config=_Config)
-class ALCluster(AL):
+class ExhaustiveCluster(Exhaustive):
     """Active Learning Cluster Class."""
 
     data_analysis: Optional[Type[base.Cluster]] = None
 
 
 @typesafe_dataclass(config=_Config)
-class ALClusterRegression(ALCluster):
-    """Active Learning ClusterRegression Class."""
+class ExhaustiveClassification(Exhaustive):
+    """Active Learning Classification Class."""
 
-    data_analysis: Optional[Type[base.ClusterRegression]] = None
-
-
-@typesafe_dataclass(config=_Config)
-class ALClassificationRegression(AL):
-    """Active Learning ClassificationRegression Class."""
-
-    data_analysis: Optional[Type[base.ClassificationRegression]] = None
+    data_analysis: Optional[Type[base.Classification]] = None
 
 
 @typesafe_dataclass(config=_Config)
-class ALClusterClassificationRegression(AL):
+class ExhaustiveClusterClassificationRegression(Exhaustive):
     """Active Learning ClusterClassificationRegression Class."""
 
     data_analysis: Optional[Type[base.ClusterClassificationRegression]] = None
+
+
+@typesafe_dataclass(config=_Config)
+class ExhaustiveClusterRegression(Exhaustive):
+    """Active Learning ClusterRegression Class."""
+
+    data_analysis: Optional[Type[base.ClusterRegression]] = None

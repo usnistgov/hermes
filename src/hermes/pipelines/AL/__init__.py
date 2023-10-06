@@ -1,3 +1,17 @@
-from .objects import ALClusterClassification as ClusterClassification
+from .objects import (
+    ALClassificationRegression,
+    ALCluster,
+    ALClusterClassification,
+    ALClusterClassificationRegression,
+    ALClusterRegression,
+    ALRegression,
+)
 
-__all__ = ["ClusterClassification"]
+__all__ = [
+    "ALClassificationRegression",
+    "ALCluster",
+    "ALClusterClassification",
+    "ALClusterClassificationRegression",
+    "ALClusterRegression",
+    "ALRegression",
+]
