@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Type, Union
 
 import numpy as np
 import tensorflow as tf
@@ -106,7 +106,40 @@ if GPC:
             # Sum the variances across the classes
             self.var_unmeasured = np.sum(var_s, axis=1).reshape(-1, 1)
 
-        # def ML_as_service_predict(self):
+        def save(self, path: str):
+            """Save the model to a file."""
+            # from https://gpflow.github.io/GPflow/2.9.0/notebooks/getting_started/saving_and_loading.html#TensorFlow-saved_model
+            self.model.compiled_predict_f = tf.function(
+                lambda Xnew: self.model.predict_f(Xnew, full_cov=False),
+                input_signature=[
+                    tf.TensorSpec(shape=[None, self.domain.shape[1]], dtype=tf.float64)
+                ],
+            )
+            self.model.compiled_predict_y = tf.function(
+                lambda Xnew: self.model.predict_y(Xnew, full_cov=False),
+                input_signature=[
+                    tf.TensorSpec(shape=[None, self.domain.shape[1]], dtype=tf.float64)
+                ],
+            )
+            tf.saved_model.save(self.model, path)
+
+            # def ML_as_service_predict(self):
+
+        def load_params(
+            self, other: Union[Type[Classification], gpflow.models.GPModel]
+        ) -> None:
+            """Load hyperparameters from another model."""
+            if isinstance(other, GPC):
+                other_model = other.model
+            elif isinstance(other, gpflow.models.GPModel):
+                other_model = other
+            else:
+                raise TypeError(
+                    "other must be a classification method or gpflow.models.GPModel"
+                )
+            params = gpflow.utilities.parameter_dict(other_model)
+            gpflow.utilities.multiple_assign(self.model, params)
+
         #     #Invoke the model from the ML as service run:
         #     model_name = self.model_name
 
@@ -119,7 +152,10 @@ if GPC:
     class HomoscedasticGPC(GPC):
         """A class for GPC's where the uncertainty on the labels is the same everywhere."""
 
-        def train(self):
+        def __post_init__(self):
+            self._generate_model()
+
+        def _generate_model(self):
             # Number of classes
             C = np.unique(self.labels)
             # Tensor of the lables
@@ -140,18 +176,19 @@ if GPC:
                 likelihood=likelihood,
                 num_latent_gps=C,
             )
+            self.model = m
 
+        def train(self):
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
             opt_logs = opt.minimize(
-                m.training_loss_closure(),
-                m.trainable_variables,
+                self.model.training_loss_closure(),
+                self.model.trainable_variables,
                 method="tnc",
                 # options=dict(maxiter=1000)
             )
-
-            self.model = m
+            # self.model = self.model
 
     @dataclass
     class SparceHomoscedasticGPC(GPC):
@@ -213,9 +250,10 @@ if GPC:
         # def __init__(self, probabilities):
         #     self.probabilities = probabilities
         #     super().__init__(**kwargs)
+        def __post_init__(self):
+            self._generate_model()
 
-        # Train the models
-        def train(self):
+        def _generate_model(self):
             # Tensor of the lables
             Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
             # Tensor of the probabilities
@@ -241,18 +279,21 @@ if GPC:
                 likelihood=likelihood,
                 num_latent_gps=C,
             )
+            self.model = m
 
+        # Train the models
+        def train(self):
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
             opt_logs = opt.minimize(
-                m.training_loss_closure(),
-                m.trainable_variables,
+                self.model.training_loss_closure(),
+                self.model.trainable_variables,
                 method="TNC",
                 # options=dict(maxiter=1000)
             )
 
-            self.model = m
+            # self.model = m
 
         # def ML_service_train(self):
         #     # Tensor of the lables

@@ -3,6 +3,7 @@
 import logging
 
 from ._classification import Classification
+from .predict_saved import SavedModel
 
 GPC = False
 
@@ -28,6 +29,7 @@ if GPC:
         "SparceHomoscedasticGPC",
         "HeteroscedasticGPC",
         "SparceHeteroscedasticGPC",
+        "SavedModel",
     ]
 else:
-    __all__ = ["Classification"]
+    __all__ = ["Classification", "SavedModel"]
