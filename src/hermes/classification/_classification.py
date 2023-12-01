@@ -1,19 +1,22 @@
+# pylint: disable=W0201
+"""Classification methods for Hermes."""
+import logging
 import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional, Type, Union
 
+import h5py
 import numpy as np
 import tensorflow as tf
-from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.base import Analysis
 
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
-import logging
 
 logger = logging.getLogger("hermes")
 
-GPC = False
+GPC_INSTALLED = False
 try:
     import gpflow
 
@@ -21,12 +24,39 @@ try:
 except ModuleNotFoundError:
     logger.warning("GPFlow is not installed.")
 else:
-    GPC = True
+    GPC_INSTALLED = True
 
 
 @dataclass
 class Classification(Analysis):
-    """Base level class for classification - predicting labels of data from known examples"""
+    """
+    Base level class for classification.
+
+    Used to predict labels of data from known examples.
+
+    Attributes
+    ----------
+    unmeasured_indexes
+    unmeasured_locations
+    indexes : np.ndarray
+        Indexes of all the possible locations to measure.
+    measured_indexes : np.ndarray
+        Indexes that have been measured.
+    locations : np.ndarray
+        Locations of the observations.
+    labels : np.ndarray
+        Labels in the form of an Nx1 matrix, where N is the number of observations.
+    domain : np.ndarray
+        The set of all possible locations to measure.
+    model: Any
+    # TODO
+
+    Methods
+    -------
+    return_index(locations)
+        Find the indexes of the domain that correspond to the locations.
+
+    """
 
     # Book-keeping
     indexes: np.ndarray  # Indexes of all the possible
@@ -40,14 +70,14 @@ class Classification(Analysis):
     domain: np.ndarray  # The set of all possible locations to measure
 
     def __post_init__(self):
-        """Check  measured_indexes are 1d"""
+        """Check measured_indexes are 1d"""
         if not self.indexes.ndim == 1:
             raise ValueError("invalid dimensions for indexes, must be 1d")
 
     # Unmeasured_Locations
     @property
     def unmeasured_indexes(self):
-        """Find all the indexes in the domain that haven't been measured."""
+        """All indexes in the domain that haven't been measured."""
 
         measured_set = set(self.measured_indexes)
         domain_set = set(self.indexes)
@@ -57,7 +87,7 @@ class Classification(Analysis):
 
     @property
     def unmeasured_locations(self):
-        """Find all the indexes in the domain that haven't been measured."""
+        """All locations in the domain that haven't been measured."""
         unmeas_locations = self.domain[self.unmeasured_indexes]
         return unmeas_locations
 
@@ -65,9 +95,13 @@ class Classification(Analysis):
     model: Optional[Any] = field(init=False, default=None)
 
     # Indexes
-    def return_index(self, locations):
-        # find the indexes of the domain that coorispond to the locations
-        # Useful to convert locations requested by acquisition functions to an index in the entire domain.
+    def return_index(self, locations) -> list:
+        """
+        Find the indexes of the domain that correspond to the locations.
+
+        Useful to convert locations requested by
+        acquisition functions to an index in the entire domain.
+        """
         indexes = []
         for i in range(locations.shape[0]):
             index = np.argmax(np.prod(self.domain == locations[i, :], axis=1))
@@ -76,16 +110,46 @@ class Classification(Analysis):
         return indexes
 
 
-if GPC:
+if GPC_INSTALLED:
 
     @dataclass
     class GPC(Classification):
-        """A class for all Gaussian Processes for clasification."""
+        """
+        Base class for all Gaussian Processes for classification.
+
+        Attributes
+        ----------
+        lengthscale : float, default=1.0
+            Lengthscale of the kernel.
+        variance : float, default=1.0
+            Variance of the kernel.
+        kernel : gpflow.kernels.Kernel, default=gpflow.kernels.RBF
+            The kernel of the Gaussian Process.
+        params : dict
+            The parameters of the model.
+
+
+        Methods
+        -------
+        predict()
+            Predict the model accross the domain.
+        predict_unmeasured()
+            Predict the model on the unmeasured locations of the domain.
+        save(path)
+            Save the model to a file.
+        load(path)
+            Load model from a file.
+        load_params(other)
+            Load hyperparameters from another model.
+        save_params(path)
+            Save the parameters of the model to a HDF5 file.
+
+        """
 
         ### Set up the GPC ####
         # RBF Kernel
         lengthscales = 1.0
-        variance = 1.0
+        variance = 1.0  # TODO ask probelamtic when redifining kernel
 
         kernel = gpflow.kernels.RBF(lengthscales=lengthscales, variance=variance)
 
@@ -96,7 +160,7 @@ if GPC:
             self.mean = mean
             self.var = var
 
-        def predict_unmeasured(self):
+        def predict_unmeasured(self) -> None:
             """Predict the model on the unmeasured locations of the domain"""
             # Predict the classes in the unmeasured locations
             self.mean_unmeasured, var_s = self.model.predict_y(
@@ -106,7 +170,7 @@ if GPC:
             # Sum the variances across the classes
             self.var_unmeasured = np.sum(var_s, axis=1).reshape(-1, 1)
 
-        def save(self, path: str):
+        def save(self, path: str) -> None:
             """Save the model to a file."""
             # from https://gpflow.github.io/GPflow/2.9.0/notebooks/getting_started/saving_and_loading.html#TensorFlow-saved_model
             self.model.compiled_predict_f = tf.function(
@@ -148,6 +212,47 @@ if GPC:
         #     self.mean = mean
         #     self.var = var
 
+        @classmethod
+        def load(cls, path: Union[str, Path]) -> "GPC":
+            """Load model from a file."""
+            loaded_ = tf.saved_model.load(path)
+            # work on each param
+
+        @property
+        def params(self):
+            """Return the parameters of the model."""
+            return gpflow.utilities.parameter_dict(self.model)
+
+        def __setattr__(self, name: str, value: Any) -> None:
+            if name == "kernel":
+                super().__setattr__(name, value)
+                self._generate_model()  # every time the kernel is changed, the model must be regenerated
+                return
+            return super().__setattr__(name, value)
+
+        def save_params(self, path: str):
+            """Save the parameters of the model to a HDF5 file."""
+            file = h5py.File(path, "w")
+            file.create_group("kernel")
+            file.create_dataset("kernel/lengthscales", data=self.kernel.lengthscales)
+            file.create_dataset("kernel/variance", data=self.kernel.variance)
+            file.create_dataset("kernel/name", data=self.kernel.__class__.__name__)
+            file.create_dataset("q_mu", data=self.params[".q_mu"])
+            file.create_dataset("q_sqrt", data=self.params[".q_sqrt"])
+            file.create_dataset(
+                "epsilon", data=self.params[".likelihood.invlink.epsilon"]
+            )
+            file.create_dataset("num_data", data=self.params[".num_data"])
+            file.create_dataset("kernel_variance", data=self.params[".kernel.variance"])
+            file.create_dataset(
+                "kernel_lengthscales", data=self.params[".kernel.lengthscales"]
+            )
+            file.close()
+
+    # TODO
+    # fix kernel variance and everything not q_mu and q_sqrt
+    # then train the model
+    # to reconstruct q_mu and q_sqrt
     @dataclass
     class HomoscedasticGPC(GPC):
         """A class for GPC's where the uncertainty on the labels is the same everywhere."""
@@ -161,19 +266,19 @@ if GPC:
             # Tensor of the lables
             Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
 
-            data = (self.locations.astype("float"), Y)
+            self._data = (self.locations.astype("float"), Y)
 
             ### Set up the GPC ####
             # Robustmax Multiclass Likelihood
             invlink = gpflow.likelihoods.RobustMax(C)  # Robustmax inverse link function
-            likelihood = gpflow.likelihoods.MultiClass(
+            self._likelihood = gpflow.likelihoods.MultiClass(
                 C, invlink=invlink
             )  # Multiclass likelihood
 
             m = gpflow.models.VGP(
-                data=data,
+                data=self._data,
                 kernel=self.kernel,
-                likelihood=likelihood,
+                likelihood=self._likelihood,
                 num_latent_gps=C,
             )
             self.model = m
@@ -194,9 +299,10 @@ if GPC:
     class SparceHomoscedasticGPC(GPC):
         """A class for Sparce GPC's where the uncertainty on the labels is the same everywhere."""
 
-        def train(self):
-            """Use the training data to train the model."""
+        def __post_init__(self):
+            self._generate_model()
 
+        def _generate_model(self):
             # Number of classes
             C = np.unique(self.labels)
             # Tensor of the lables
@@ -213,30 +319,33 @@ if GPC:
 
             M = int(0.4 * Y.shape[0])  # Number of inducing points
             Z1 = np.random.permutation(
-                inputs
+                data[0]
             )  # Generate a random list of input locations
             Z = Z1[
                 :M, :
             ].copy()  # Take the first M locations of Z1 to initialize the inducing points
-
             model = gpflow.models.SVGP(
-                kernel,
+                self.kernel,
                 likelihood,
                 Z,
                 num_latent_gps=C,
             )
+            self.model = model
+
+        def train(self):
+            """Use the training data to train the model."""
 
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
             opt_logs = opt.minimize(
-                model.training_loss_closure(),
-                model.trainable_variables,
+                self.model.training_loss_closure(),
+                self.model.trainable_variables,
                 method="tnc",
                 options=dict(maxiter=1000),
             )
 
-            self.model = model
+            # self.model = model
 
     @dataclass
     class HeteroscedasticGPC(GPC):
@@ -253,33 +362,68 @@ if GPC:
         def __post_init__(self):
             self._generate_model()
 
-        def _generate_model(self):
+        def _generate_model(self) -> None:
             # Tensor of the lables
             Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
             # Tensor of the probabilities
-            Sigma_y = tf.convert_to_tensor(self.probabilities)
+            sigma_y = tf.convert_to_tensor(self.probabilities)
             # Number of clusters
-            C = len(self.probabilities[0, :])
+            _C = len(self.probabilities[0, :])
 
             # Package training data
-            data = (self.locations.astype("float"), Y)
+            self._data = (self.locations.astype("float"), Y)
 
             ### Set up the GPC ####
             # Robustmax Multiclass Likelihood
             invlink = HeteroscedasticRobustMax(
-                C, Sigma_y
+                _C, sigma_y
             )  # Robustmax inverse link function
-            likelihood = HeteroscedasticMultiClass(
+            self._likelihood = HeteroscedasticMultiClass(
+                _C, invlink=invlink
+            )  # Multiclass likelihood
+
+            m = gpflow.models.VGP(
+                data=self._data,
+                kernel=self.kernel,
+                likelihood=self._likelihood,
+                num_latent_gps=_C,
+            )
+            self.model = m
+
+        @classmethod
+        def _generate_model_from_trained(
+            cls,
+            kernel: gpflow.kernels.Kernel,
+            sigma_y: tf.Tensor,
+            C: int,
+            data: tuple,
+        ) -> gpflow.models.VGP:
+            ### Set up the GPC ####
+            # Robustmax Multiclass Likelihood
+            invlink = HeteroscedasticRobustMax(
+                C, sigma_y
+            )  # Robustmax inverse link function
+            _likelihood = HeteroscedasticMultiClass(
                 C, invlink=invlink
             )  # Multiclass likelihood
 
             m = gpflow.models.VGP(
-                data=data,
-                kernel=self.kernel,
-                likelihood=likelihood,
+                data=data,  # type: ignore
+                kernel=kernel,
+                likelihood=_likelihood,
                 num_latent_gps=C,
             )
-            self.model = m
+
+            gpflow.utilities.set_trainable(m.kernel.variance, False)
+            gpflow.utilities.set_trainable(m.kernel.lengthscales, False)
+            # "train" model. goal: get same q_mu and q_sqrt as before
+            opt = gpflow.optimizers.Scipy()
+            opt_logs = opt.minimize(
+                m.training_loss_closure(),
+                m.trainable_variables,
+                method="TNC",
+            )
+            return m
 
         # Train the models
         def train(self):
@@ -294,6 +438,50 @@ if GPC:
             )
 
             # self.model = m
+
+        def save_trained(self, path: Union[str, Path]) -> None:
+            with h5py.File(str(path), "w") as file:
+                file.create_group("kernel")
+                file.create_dataset(
+                    "kernel/variance",
+                    data=self.model.kernel.variance.numpy(),
+                )
+                file.create_dataset(
+                    "kernel/lengthscales",
+                    data=self.model.kernel.lengthscales.numpy(),
+                )
+                file.create_dataset(
+                    "kernel/name",
+                    data=self.model.kernel.__class__.__name__,
+                )
+                file.create_group("data")
+                file.create_dataset("data/x", data=self._data[0])
+                file.create_dataset("data/y", data=self._data[1])
+                file.create_dataset("probabilities", data=self.probabilities)
+
+        @classmethod
+        def load(cls, path: Union[str, Path]) -> gpflow.models.VGP:
+            """Load trained model from a file."""
+            with h5py.File(str(path), "r") as file:
+                kernel_name = file["kernel/name"][()].decode()
+                kernel_variance = file["kernel/variance"][()]
+                kernel_lengthscales = file["kernel/lengthscales"][()]
+                data = (file["data/x"][()], file["data/y"][()])
+                probabilities = file["probabilities"][()]
+
+            kernel = getattr(gpflow.kernels, kernel_name)(
+                lengthscales=kernel_lengthscales, variance=kernel_variance
+            )
+            sigma_y = tf.convert_to_tensor(probabilities)
+            C = len(probabilities[0, :])
+            return cls._generate_model_from_trained(
+                kernel=kernel,
+                sigma_y=probabilities,
+                C=C,
+                data=data,
+            )
+
+            # work on each param
 
         # def ML_service_train(self):
         #     # Tensor of the lables
@@ -348,8 +536,10 @@ if GPC:
         # Probabilistic labeling
         probabilities: np.array  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
-        # Train the models
-        def train(self):
+        def __post_init__(self):
+            self._generate_model()
+
+        def _generate_model(self):
             # Tensor of the lables
             Y = tf.convert_to_tensor(self.labels.reshape(-1, 1))
             # Tensor of the probabilities
@@ -371,7 +561,7 @@ if GPC:
 
             M = int(0.4 * Y.shape[0])  # Number of inducing points
             Z1 = np.random.permutation(
-                inputs
+                data[0]
             )  # Generate a random list of input locations
             Z = Z1[
                 :M, :
@@ -383,15 +573,20 @@ if GPC:
                 Z,
                 num_latent_gps=C,
             )
+            self.model = m
 
+        # Train the models
+        def train(self):
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
             opt_logs = opt.minimize(
-                m.training_loss_closure(),
-                m.trainable_variables,
+                self.model.training_loss_closure(),
+                self.model.trainable_variables,
                 method="tnc",
                 options=dict(maxiter=1000),
             )
 
-            self.model = m
+            # self.model = m
+
+            # TODO Kernel not RBF.
