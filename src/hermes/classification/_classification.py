@@ -36,8 +36,6 @@ class Classification(Analysis):
 
     Attributes
     ----------
-    unmeasured_indexes
-    unmeasured_locations
     indexes : np.ndarray
         Indexes of all the possible locations to measure.
     measured_indexes : np.ndarray
@@ -49,7 +47,7 @@ class Classification(Analysis):
     domain : np.ndarray
         The set of all possible locations to measure.
     model: Any
-    # TODO
+    # TODO, make comments of how they get initialized
 
     Methods
     -------
@@ -150,12 +148,14 @@ if GPC_INSTALLED:
         # RBF Kernel
         lengthscales = 1.0
         variance = 1.0  # TODO ask probelamtic when redifining kernel
+        # TODO rename to lengthscales_prior ... for reproducibility
 
         kernel = gpflow.kernels.RBF(lengthscales=lengthscales, variance=variance)
 
         def predict(self):
             """Predict the model accross the domain."""
 
+            # TODO we can build every args, error if domain not set
             mean, var = self.model.predict_y(self.domain)
             self.mean = mean
             self.var = var
@@ -224,9 +224,14 @@ if GPC_INSTALLED:
             return gpflow.utilities.parameter_dict(self.model)
 
         def __setattr__(self, name: str, value: Any) -> None:
-            if name == "kernel":
+            if (
+                name == "kernel"
+            ):  # every time the kernel is changed, the model must be regenerated
                 super().__setattr__(name, value)
-                self._generate_model()  # every time the kernel is changed, the model must be regenerated
+                if (
+                    hasattr(self, "model") and self.model is not None
+                ):  # if model has been generated already
+                    self._generate_model()
                 return
             return super().__setattr__(name, value)
 
@@ -249,10 +254,6 @@ if GPC_INSTALLED:
             )
             file.close()
 
-    # TODO
-    # fix kernel variance and everything not q_mu and q_sqrt
-    # then train the model
-    # to reconstruct q_mu and q_sqrt
     @dataclass
     class HomoscedasticGPC(GPC):
         """A class for GPC's where the uncertainty on the labels is the same everywhere."""
@@ -356,11 +357,30 @@ if GPC_INSTALLED:
         # Probabilistic labeling
         probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
-        # def __init__(self, probabilities):
-        #     self.probabilities = probabilities
-        #     super().__init__(**kwargs)
-        def __post_init__(self):
-            self._generate_model()
+        def __init__(self, from_trained: bool = False, **kwargs):
+            self.probabilities = kwargs["probabilities"]
+            kwargs.pop("probabilities")
+            if from_trained:
+                self.kernel = kwargs["kernel"]
+                _params_dict = {
+                    ".q_mu": kwargs["q_mu"],
+                    ".q_sqrt": kwargs["q_sqrt"],
+                }
+                kwargs.pop("q_mu")
+                kwargs.pop("q_sqrt")
+                kwargs.pop("kernel")
+                super().__init__(**kwargs)
+                self._generate_model()
+                gpflow.utilities.multiple_assign(self.model, _params_dict)  # type: ignore
+            else:
+                super().__init__(**kwargs)
+                self._generate_model()
+
+        # def __post_init__(self):
+        #     if self._from_trained:
+        #         self._generate_model_from_trained()
+        #     else:
+        #         self._generate_model()
 
         def _generate_model(self) -> None:
             # Tensor of the lables
@@ -394,7 +414,7 @@ if GPC_INSTALLED:
         def _generate_model_from_trained(
             cls,
             kernel: gpflow.kernels.Kernel,
-            sigma_y: tf.Tensor,
+            sigma_y: Union[tf.Tensor, np.ndarray],
             C: int,
             data: tuple,
         ) -> gpflow.models.VGP:
@@ -414,15 +434,6 @@ if GPC_INSTALLED:
                 num_latent_gps=C,
             )
 
-            gpflow.utilities.set_trainable(m.kernel.variance, False)
-            gpflow.utilities.set_trainable(m.kernel.lengthscales, False)
-            # "train" model. goal: get same q_mu and q_sqrt as before
-            opt = gpflow.optimizers.Scipy()
-            opt_logs = opt.minimize(
-                m.training_loss_closure(),
-                m.trainable_variables,
-                method="TNC",
-            )
             return m
 
         # Train the models
@@ -437,9 +448,8 @@ if GPC_INSTALLED:
                 # options=dict(maxiter=1000)
             )
 
-            # self.model = m
-
-        def save_trained(self, path: Union[str, Path]) -> None:
+        def save(self, path: Union[str, Path]) -> None:
+            """Save model and object to a file."""
             with h5py.File(str(path), "w") as file:
                 file.create_group("kernel")
                 file.create_dataset(
@@ -454,34 +464,50 @@ if GPC_INSTALLED:
                     "kernel/name",
                     data=self.model.kernel.__class__.__name__,
                 )
-                file.create_group("data")
-                file.create_dataset("data/x", data=self._data[0])
-                file.create_dataset("data/y", data=self._data[1])
+                # file.create_group("data")
+                # file.create_dataset("data/x", data=self._data[0])
+                # file.create_dataset("data/y", data=self._data[1])
+                file.create_dataset("labels", data=self.labels)
+                file.create_dataset("locations", data=self.locations)
+                file.create_dataset("indexes", data=self.indexes)
+                file.create_dataset("measured_indexes", data=self.measured_indexes)
+                file.create_dataset("domain", data=self.domain)
                 file.create_dataset("probabilities", data=self.probabilities)
+                file.create_dataset("q_mu", data=self.model.q_mu.numpy())  # type: ignore
+                file.create_dataset("q_sqrt", data=self.model.q_sqrt.numpy())  # type: ignore
 
         @classmethod
-        def load(cls, path: Union[str, Path]) -> gpflow.models.VGP:
-            """Load trained model from a file."""
+        def load(cls, path: Union[str, Path], t: Optional[int]) -> "HeteroscedasticGPC":
+            """Load trained object and model from a file."""
             with h5py.File(str(path), "r") as file:
-                kernel_name = file["kernel/name"][()].decode()
-                kernel_variance = file["kernel/variance"][()]
-                kernel_lengthscales = file["kernel/lengthscales"][()]
-                data = (file["data/x"][()], file["data/y"][()])
-                probabilities = file["probabilities"][()]
+                kernel_name = file["kernel/name"][()].decode()  # type: ignore
+                kernel_variance = file["kernel/variance"][()]  # type: ignore
+                kernel_lengthscales = file["kernel/lengthscales"][()]  # type: ignore
+                probabilities = file["probabilities"][()]  # type: ignore
+                locations = file["locations"][()]  # type: ignore
+                labels = file["labels"][()]  # type: ignore
+                indexes = file["indexes"][()]  # type: ignore
+                measured_indexes = file["measured_indexes"][()]  # type: ignore
+                domain = file["domain"][()]  # type: ignore
+                q_mu = file["q_mu"][()]  # type: ignore
+                q_sqrt = file["q_sqrt"][()]  # type: ignore
 
             kernel = getattr(gpflow.kernels, kernel_name)(
                 lengthscales=kernel_lengthscales, variance=kernel_variance
             )
-            sigma_y = tf.convert_to_tensor(probabilities)
-            C = len(probabilities[0, :])
-            return cls._generate_model_from_trained(
+            obj = HeteroscedasticGPC(
                 kernel=kernel,
-                sigma_y=probabilities,
-                C=C,
-                data=data,
+                probabilities=probabilities,
+                domain=domain,
+                q_mu=q_mu,
+                q_sqrt=q_sqrt,
+                locations=locations,
+                labels=labels,
+                indexes=indexes,
+                measured_indexes=measured_indexes,
+                from_trained=True,
             )
-
-            # work on each param
+            return obj
 
         # def ML_service_train(self):
         #     # Tensor of the lables
