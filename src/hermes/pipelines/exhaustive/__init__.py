@@ -1,3 +1,4 @@
+"""Exhaustive Pipelines."""
 from .objects import (
     ExhaustiveClassification,
     ExhaustiveCluster,

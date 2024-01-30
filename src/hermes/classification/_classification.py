@@ -48,7 +48,7 @@ class Classification(Analysis):
         Labels in the form of an Nx1 matrix, where N is the number of observations.
     domain : np.ndarray
         The set of all possible locations to measure.
-    model: Any
+    model: gpflow.models.VGP
     # TODO, make comments of how they get initialized
 
     Methods

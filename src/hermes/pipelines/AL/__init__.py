@@ -1,3 +1,4 @@
+"""AL Pipelines."""
 from .objects import (
     ALClassificationRegression,
     ALCluster,
