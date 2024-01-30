@@ -295,7 +295,7 @@ if GPC_INSTALLED:
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
-            opt_logs = opt.minimize(
+            opt.minimize(
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
@@ -347,7 +347,7 @@ if GPC_INSTALLED:
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
-            opt_logs = opt.minimize(
+            opt.minimize(
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
@@ -384,7 +384,6 @@ if GPC_INSTALLED:
                 gpflow.utilities.multiple_assign(self.model, _params_dict)  # type: ignore
             else:
                 super().__init__(**kwargs)
-                # self._generate_model()
 
         def __post_init__(self):
             if not self._from_trained:
@@ -450,7 +449,7 @@ if GPC_INSTALLED:
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
-            opt_logs = opt.minimize(
+            opt.minimize(
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="TNC",
@@ -578,7 +577,7 @@ if GPC_INSTALLED:
         """
 
         # Probabilistic labeling
-        probabilities: np.array  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
         def __post_init__(self):
             self._generate_model()
@@ -624,11 +623,11 @@ if GPC_INSTALLED:
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
-            opt_logs = opt.minimize(
+            opt.minimize(
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
-                options=dict(maxiter=1000),
+                options={"maxiter":1000},
             )
 
             # self.model = m
