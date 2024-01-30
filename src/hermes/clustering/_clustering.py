@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103, E0401, E0611
+# pylint: disable=C0103, E0401, E0611, E3701
 """
 Created on Tue Sep 27 11:57:27 2022
 
@@ -10,11 +10,10 @@ import logging
 from dataclasses import field
 from typing import Any, Optional
 
-logger = logging.getLogger("hermes")
-
 import networkx as nx
 import numpy as np
 
+logger = logging.getLogger("hermes")
 try:
     from cdlib import algorithms
 except ModuleNotFoundError:
@@ -99,7 +98,7 @@ class Cluster(Analysis):
 
         if __name == "measurements_similarity_type":
             if not isinstance(__value, BaseSimilarity):
-                raise TypeError("invalid distance")
+                raise TypeError("invalid similarity")
             v = __value
             v.distance_matrix = self.measurements_distance  # type: ignore
             setattr(self, "measurements_similarity", v.calculate())  # type: ignore
@@ -123,7 +122,7 @@ class Cluster(Analysis):
 
         return super().__setattr__(__name, __value)
 
-    def __post_init_post_parse__(self):
+    def __post_init__(self):
         self.measurements_distance_type.X = self.measurements  # type: ignore
         self.measurements_distance = self.measurements_distance_type.calculate()  # type: ignore
         self.measurements_similarity_type.distance_matrix = self.measurements_distance

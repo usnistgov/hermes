@@ -1,0 +1,19 @@
+# check why setting of values did not work
+# think about logging which locations have been measured
+# look for hardcoded things to remove them
+# implement optional dependencies
+# split QM2Beamline into separate script
+# problem: at CHESS →> ML as a service, built
+# assuming you had a pretrained DNN in pytorch or tf or some set of fct in sklearn
+main difficul: need to serialize the model after trained, save it to disk as tarball
+# send tarball to server, then model would be in server, until you need to predict,
+# request it from that server, serverl sends to server2, unpacks, uses
+# question: serialize model? pickle not good
+
+ANDIE: for regression
+
+ForLoop name: Exhaustive
+
+hdf5 format? to metadata materials science, nexus file format
+
+gpflow: fix so no longer trainable, then train (nothing happesn), then use predict

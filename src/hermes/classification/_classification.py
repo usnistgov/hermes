@@ -2,13 +2,15 @@
 """Classification methods for Hermes."""
 import logging
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import field
 from pathlib import Path
 from typing import Any, Optional, Type, Union
 
 import h5py
 import numpy as np
 import tensorflow as tf
+from pydantic import ConfigDict
+from pydantic.dataclasses import dataclass
 
 from hermes.base import Analysis
 
@@ -27,7 +29,7 @@ else:
     GPC_INSTALLED = True
 
 
-@dataclass
+@dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Classification(Analysis):
     """
     Base level class for classification.
@@ -62,7 +64,8 @@ class Classification(Analysis):
 
     # Training data
     locations: np.ndarray  # Locations of the oberservations
-    labels: np.ndarray  # labels in the form of an Nx1 matrix, where N is the number of observations.
+    labels: np.ndarray  # labels in the form of an Nx1 matrix,
+    # where N is the number of observations.
 
     # Test data
     domain: np.ndarray  # The set of all possible locations to measure
@@ -84,13 +87,17 @@ class Classification(Analysis):
         return unmeasured
 
     @property
-    def unmeasured_locations(self):
+    def unmeasured_locations(self) -> np.ndarray:
         """All locations in the domain that haven't been measured."""
-        unmeas_locations = self.domain[self.unmeasured_indexes]
+        if len(self.unmeasured_indexes) > 0:
+            unmeas_locations = self.domain[self.unmeasured_indexes]
+        else:
+            unmeas_locations = np.array([])
         return unmeas_locations
 
     # The Model
-    model: Optional[Any] = field(init=False, default=None)
+    # model: Optional[Any] = field(init=False, default=None)
+    model: gpflow.models.VGP = field(init=False)
 
     # Indexes
     def return_index(self, locations) -> list:
@@ -146,22 +153,23 @@ if GPC_INSTALLED:
 
         ### Set up the GPC ####
         # RBF Kernel
-        lengthscales = 1.0
-        variance = 1.0  # TODO ask probelamtic when redifining kernel
-        # TODO rename to lengthscales_prior ... for reproducibility
+        lengthscales_prior = 1.0
+        variance_prior = 1.0
 
-        kernel = gpflow.kernels.RBF(lengthscales=lengthscales, variance=variance)
+        kernel = gpflow.kernels.RBF(
+            lengthscales=lengthscales_prior, variance=variance_prior
+        )
+        model: gpflow.models.VGP = field(init=False)
 
         def predict(self):
             """Predict the model accross the domain."""
 
-            # TODO we can build every args, error if domain not set
             mean, var = self.model.predict_y(self.domain)
             self.mean = mean
             self.var = var
 
         def predict_unmeasured(self) -> None:
-            """Predict the model on the unmeasured locations of the domain"""
+            """Predict the model on the unmeasured locations of the domain."""
             # Predict the classes in the unmeasured locations
             self.mean_unmeasured, var_s = self.model.predict_y(
                 self.unmeasured_locations
@@ -212,16 +220,14 @@ if GPC_INSTALLED:
         #     self.mean = mean
         #     self.var = var
 
-        @classmethod
-        def load(cls, path: Union[str, Path]) -> "GPC":
-            """Load model from a file."""
-            loaded_ = tf.saved_model.load(path)
-            # work on each param
-
         @property
         def params(self):
             """Return the parameters of the model."""
             return gpflow.utilities.parameter_dict(self.model)
+
+        def _generate_model(self) -> None:
+            # placeholder for mypy
+            pass
 
         def __setattr__(self, name: str, value: Any) -> None:
             if (
@@ -261,7 +267,7 @@ if GPC_INSTALLED:
         def __post_init__(self):
             self._generate_model()
 
-        def _generate_model(self):
+        def _generate_model(self) -> None:
             # Number of classes
             C = np.unique(self.labels)
             # Tensor of the lables
@@ -285,6 +291,7 @@ if GPC_INSTALLED:
             self.model = m
 
         def train(self):
+            """Train GPC using scipy optimizer and tnc method."""
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
@@ -294,6 +301,7 @@ if GPC_INSTALLED:
                 method="tnc",
                 # options=dict(maxiter=1000)
             )
+            # TODO remove var optlpogs
             # self.model = self.model
 
     @dataclass
@@ -303,7 +311,7 @@ if GPC_INSTALLED:
         def __post_init__(self):
             self._generate_model()
 
-        def _generate_model(self):
+        def _generate_model(self) -> None:
             # Number of classes
             C = np.unique(self.labels)
             # Tensor of the lables
@@ -334,7 +342,7 @@ if GPC_INSTALLED:
             self.model = model
 
         def train(self):
-            """Use the training data to train the model."""
+            """Train GPC using scipy optimizer, tnc method and `maxiter`=1000."""
 
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
@@ -343,7 +351,7 @@ if GPC_INSTALLED:
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
-                options=dict(maxiter=1000),
+                options={"maxiter": 1000},
             )
 
             # self.model = model
@@ -356,6 +364,7 @@ if GPC_INSTALLED:
 
         # Probabilistic labeling
         probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        _from_trained: bool = False
 
         def __init__(self, from_trained: bool = False, **kwargs):
             self.probabilities = kwargs["probabilities"]
@@ -369,18 +378,17 @@ if GPC_INSTALLED:
                 kwargs.pop("q_mu")
                 kwargs.pop("q_sqrt")
                 kwargs.pop("kernel")
+                kwargs.update({"_from_trained": True})
                 super().__init__(**kwargs)
                 self._generate_model()
                 gpflow.utilities.multiple_assign(self.model, _params_dict)  # type: ignore
             else:
                 super().__init__(**kwargs)
-                self._generate_model()
+                # self._generate_model()
 
-        # def __post_init__(self):
-        #     if self._from_trained:
-        #         self._generate_model_from_trained()
-        #     else:
-        #         self._generate_model()
+        def __post_init__(self):
+            if not self._from_trained:
+                self._generate_model()
 
         def _generate_model(self) -> None:
             # Tensor of the lables
@@ -438,6 +446,7 @@ if GPC_INSTALLED:
 
         # Train the models
         def train(self):
+            """Train GPC using scipy optimizer and tnc method."""
             #### Train the GPC ####
             opt = gpflow.optimizers.Scipy()
 
@@ -449,7 +458,16 @@ if GPC_INSTALLED:
             )
 
         def save(self, path: Union[str, Path]) -> None:
-            """Save model and object to a file."""
+            """Save model and GPC object to a file.
+
+            Save the trained model along with the GPC
+            Python object to a HDF5 file.
+
+            Parameters
+            ----------
+            path : str | Path
+                Path to save the model and object.
+            """
             with h5py.File(str(path), "w") as file:
                 file.create_group("kernel")
                 file.create_dataset(

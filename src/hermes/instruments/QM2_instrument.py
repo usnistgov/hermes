@@ -54,7 +54,7 @@ class CHESSQM2Beamline(PowderDiffractometer):
 
     reduced_sample_dir: Path = reduction_dir.joinpath(sample_name)
 
-    def __post_init_post_parse__(self):
+    def __post_init__(self):
         # load xy coordinates and compositions for discrete library sample
         self.load_wafer_data()
 
