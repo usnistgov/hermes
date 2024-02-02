@@ -20,7 +20,17 @@ from hermes.utils import _default_ndarray
 
 @dataclass
 class BaseDistance(BaseDS):
-    """Base class for distance types."""
+    """Base class for distance types.
+    
+    Methods
+    -------
+    calculate(self, X, Y, metric)
+        calculates the pairwise distances of each element in X to each element of Y.
+        If Y is not provided then distances are each element in X to each element in X.
+        metric is any valid string for SKlearn.metrics.pairwise_distances
+        Note: this method is superceded in child subclasses.
+        
+    """
 
     def calculate(self, X: np.ndarray, Y: Optional[np.ndarray], metric: str):
         """Calculate distance."""
