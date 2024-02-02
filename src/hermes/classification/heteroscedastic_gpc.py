@@ -208,6 +208,9 @@ class HeteroscedasticRobustMax(Module):
         self, num_classes: int, Sigma_y, epsilon: float = 1e-3, **kwargs: Any
     ) -> None:
         """
+        Sigma_y is the membership probability of each point to each class. Rows must sum to unity.
+
+
         `epsilon` represents the fraction of 'errors' in the labels of the
         dataset. This may be a hard parameter to optimize, so by default
         it is set un-trainable, at a small value.

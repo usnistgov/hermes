@@ -43,14 +43,23 @@ class Classification(Analysis):
     measured_indexes : np.ndarray
         Indexes that have been measured.
     locations : np.ndarray
-        Locations of the observations.
+        Locations of the measurements.
     labels : np.ndarray
-        Labels in the form of an Nx1 matrix, where N is the number of observations.
+        Labels in the form of an Nx1 matrix, where N is the number of measurements.
     domain : np.ndarray
         The set of all possible locations to measure.
     model: gpflow.models.VGP
     # TODO, make comments of how they get initialized
 
+    Properties
+    ----------
+    unmeasured_indexes
+        Indexes of all the locations in the Domain that have not been measured.
+
+    unmeasured_locations
+        Locations in the Domain that have not been measured.
+
+    
     Methods
     -------
     return_index(locations)
@@ -360,6 +369,21 @@ if GPC_INSTALLED:
     class HeteroscedasticGPC(GPC):
         """A class for GPC's where the training data has known uncertainty.
         Specifically, at every observation there is a probabilistic assignment of the labels.
+        
+        Attributes
+        ----------
+        probabilities : np.ndarray
+            Membership probabilities of each measurement to each cluster.
+            Membership of each measurement must sum to unity (rows sum to 1).
+            Shape is N x C for N measurements and C clusters. 
+
+        _from_trained : bool
+            Private attribute that indicates whether the model is constructed by loading a pre-trained model.
+
+        Methods
+        -------
+        train(self)
+            Train the GPC. 
         """
 
         # Probabilistic labeling
