@@ -268,9 +268,20 @@ class ContiguousCluster(Cluster):
     """Use this algorthim to cluster data in domains with a contigious constraint.
     Example domains where this applies: Phase regions in a phase diagram,
     grains in a micrograph, etc.
-    Locations of measurements are used to form a graph.
+    Locations of measurements are used to form a graph with a Delauny Triangulation.
     The similarities of those measureements are used as wieghts for the edges of that graph.
-    The graph is partitioned to form the clusters."""
+    The graph is partitioned to form the clusters.
+    Partitioning a Delauny Triangulation ensures that the patitions (clusters) are contiguous within the location space. 
+
+    
+    Methods
+    -------
+    form_graph(self)
+        Uses the locations of the measurements (in 2D or 3D) to form an adjacency graph using a Delauny Triangulation.
+
+    get_local_membership_prob(self, v: float = 1.0)
+        Determines the membership probabilities of each measurement to each of the clusters of its nieghbors in the graph. 
+    """
 
     graph: Optional[nx.Graph] = field(init=False, default=None)
     _graph: Optional[nx.Graph] = field(default=None)
@@ -374,12 +385,14 @@ class ContiguousCluster(Cluster):
     def get_local_membership_prob(self, v: float = 1.0):
         """Get the membership proabilities of each measurement beloning to each cluster
         considering the structure of the graph.
-        #v is a parameter that adjusts the strentgh of the partitioning with the similarities
-        Get membership probabilites:
-        Create a containers for the distances, connections, and similarities
-        of each node for each label.
-        Each label will be that row number, each node will be that column number.
+        Determines the membership probabilities of each measurement to each of the clusters of its nieghbors in the graph.
+
+        Parameters
+        ----------
+        v : float
+            parameter that adjusts the strentgh of the partitioning with the similarities
         """
+
         for attr in ["labels", "graph"]:
             _check_attr(self, attr)
         cluster_labels = self.labels
@@ -428,7 +441,13 @@ class ContiguousCluster(Cluster):
 
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
-    """Use these algorithms when the number of clusters is known."""
+    """Use these algorithms when the number of clusters is known.
+    
+    Parameters
+    ----------
+    K : int
+        The number of clusters.
+    """
 
     K: int = 2
     # graph: nx.Graph = field(init=False)
@@ -442,7 +461,8 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
 @typesafedataclass(config=_Config)
 class Spectral(ContiguousFixedKClustering):
-    """Spectral Clustering."""
+    """Spectral Clustering using the graph formed by the Contiguous parent class 
+    to enforce the contigous constraint."""
 
     def cluster(self, n_clusters: int, **kwargs):
         """Spectral Clustering."""
@@ -465,7 +485,13 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 
 @typesafedataclass(config=_Config)
 class RBPots(ContiguousCommunityDiscovery):
-    """RBPots."""
+    """RBPots algorithm on the graph formed from the Contiguous parent class.
+    
+    Paremeters
+    ----------
+    resolution : float
+        Parameter that controls how sharp the change in similarity should be to cause a partition.
+    """
 
     resolution: float = 0.2
 
@@ -488,8 +514,19 @@ class RBPots(ContiguousCommunityDiscovery):
 @typesafedataclass(config=_Config)
 class IteritativeFixedK(ContiguousCommunityDiscovery):
     """Call a fixed k clustering method iteratively
-    using the Gap Statisic method to choose K."""
-
+    using the Gap Statisic method to choose K.
+    
+    Parameters
+    ----------
+    min_K : int
+        Smallest number of clusters to consider.
+    
+    mak_K : int
+        Largest number of clusters to consider.
+        
+    """
+# TODO:  Write Gap_Statistic function
+    
     # method: ContiguousFixedKClustering
     min_K: int = 1
     max_K: int = 10
