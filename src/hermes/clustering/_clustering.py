@@ -49,7 +49,69 @@ class _Config:  # pylint: disable=too-few-public-methods
 
 @typesafedataclass(config=_Config)
 class Cluster(Analysis):
-    """Class for clustering algorithms."""
+    """Class for clustering algorithms.
+    Clustering Algorithms take in an array of measurements and (optionally) thier locations,
+    and return a label for each based on their similarities or distances.
+    
+    Attributes
+    ----------
+    measurements: np.ndarray
+        Array of all the measurements in shape N x D for N measurements of dimension D.
+    
+    measurements_distance_type: BaseDistance = (EuclideanDistance())
+        Metric used to discribe the distance between measurements. 
+        Default is Euclidean Distance.
+    
+    measurements_similarity_type: BaseSimilarity = (SquaredExponential())
+        Metric used to discribe the similarities of measurements. 
+        Default is SquaredExponential
+            similarity = exp(-1 * distance**2)
+    
+    measurements_distance: np.ndarray
+        Array of pairwise distances between each measurement 
+        as claculated by measurements_distance_type.
+        Shape should be N x N for N measurements. 
+    
+    measurements_similarity: np.ndarray
+        Array of pairwise similarities between each measurement 
+        as claculated by measurements_similarity_type.
+        Shape should be N x N for N measurements. 
+    
+    locations : np.ndarray 
+        Array of all the locations of each measurement in shape N x L for N measurements at locations discribed by L dimensions.
+    
+    locations_distance_type : BaseDistance = (EuclideanDistance())
+        Metric used to discribe the distance between locations of the measurements. 
+        Default is Euclidean Distance.
+    
+    locations_similarity_type: BaseSimilarity = SquaredExponential()
+        Metric used to discribe the similarities of locations of the measurements. 
+        Default is SquaredExponential
+            similarity = exp(-1 * distance**2)
+    
+    locations_distance: np.ndarray 
+        Array of pairwise distances between each location of each measurement 
+        as claculated by locations_distance_type.
+        Shape should be N x N for N measurements. 
+    
+    locations_similarity: np.ndarray
+        Array of pairwise similarities between each location of each measurement 
+        as claculated by locations_similarity_type.
+        Shape should be N x N for N measurements. 
+    
+    labels: np.ndarray 
+        Array of the cluster labels of each measurement.
+
+    probabilities: np.ndarray
+        Array of the membership probaiblity of each measurement to each cluster. 
+
+    Methods
+    -------
+    get_global_membership_prob(self, v: float = 1.0, exclude_self: bool = False)
+        Calculates the membership probability of each measurement to each cluster.
+        Shape should be N x C for N measurements and C clusters.
+        Membership probability is forced to sum to unity (100%) across the clusters for each measurment (rows sum to 1).
+        Note: can only be called after cluster labels are calculated. """
 
     measurements: np.ndarray
 
@@ -139,11 +201,18 @@ class Cluster(Analysis):
     # TODO: only create class of train hgpc, hgpc classes can be private
 
     def get_global_membership_prob(self, v: float = 1.0, exclude_self: bool = False):
-        """Get the probability of each measurement beloning to each cluster."""
+        """Get the probability of each measurement beloning to each cluster.
+        
+        Parameters
+        ----------
+        v : float
+            parameter that adjusts the strentgh of the partitioning with the similarities
+        exlude_self : bool 
+            flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to.
+
+        """
 
         cluster_labels = self.labels
-        # v is a parameter that adjusts the strentgh of the partitioning with the similarities
-        # exlude_self is a flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to.
 
         # Find the clusters
         clusters, counts = np.unique(cluster_labels, return_counts=True)
