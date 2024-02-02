@@ -34,7 +34,72 @@ class _Config:  # pylint: disable=too-few-public-methods
 class PowderDiffractometer(Diffractometer):
     """Class for Powder (aka 1D) diffractometer instruments.
     Typically expect the sample to be a combinatorial wafer (each location has a known, pre-determined composition),
-    but ignore the composition information for general samples."""
+    but ignore the composition information for general samples.
+    
+    Parameters
+    ----------
+    wafer_directory : Path
+        Filesystem location for example data that can be used in simulation mode.
+        
+    wafer_coords_file : Path
+        Filesystem location of wafer coodinates in a tab delimited text file.
+        
+    wafer_composition_file : Path
+        Filesystem location of compositions of the wafer at each location in a tab delimited text file.
+        
+    wafer_xrd_file : Optional[Path]
+        Filesytem location of example XRD measurements at each location.
+        
+    diffraction_space_name : Optional[str]
+        The type of diffraction space (i.e. Q-space or 2theta).
+        
+    diffraction_space_name : Optional[int]
+        The number of bins over the diffraction space that the measurements.
+        
+    xy_locations : Optional[pd.DataFrame]
+        Locations where the measurements
+        
+    compostions : Optional[pd.DataFrame]
+        DataFrame of the chemical compostions at the measured locations.
+    
+    xrd_measurements : Optional[Union[pd.DataFrame, np.ndarray]]
+        XRD measurement at each measured location.
+    
+    Properties
+    ----------
+    sim_wafer_coords()
+        wafer coordinates to use in simulation mode.
+    
+    sim_composition_domain()
+        domain in compostion space to use in simulation mode. 
+
+    sim_two_theta_space()
+        Diffraction space to use in simulation mode. 
+
+    compositions_2d()
+        Convert compositions given as a 3 component simplex (i.e. (A,B,C) compositions sum to 1)
+        into 2D coordinates on a equlateral triangle, with 
+            A at (0,0)
+            B at (1,0)
+            C at (0.5,  0.5 * sqrt(3))
+    
+    Methods
+    -------
+    load_wafer_data()
+        Method for loading data from disk.
+        i.e locations and compositions across the wafer. 
+
+    load_sim_data()
+        Method to load example xrd measurements at the locations.
+        Used for simulation mode.
+
+    simulated_move_and_measure(self, compositions_locations)
+        Simulate moving to locations coorispoinding to the compositions and returning the example XRD measurements. 
+
+    
+        
+    """
+    
 
     # Location for example data used in simulation mode:
     wafer_directory: Path

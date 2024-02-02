@@ -39,7 +39,58 @@ class _Config:  # pylint: disable=too-few-public-methods
 
 @typesafedataclass(config=_Config)
 class CHESSQM2Beamline(PowderDiffractometer):
-    """Class for the QM2 diffractometer at CHESS"""
+    """Class for the QM2 diffractometer at CHESS
+    
+    Attributes
+    ----------
+    simulation : bool
+        Flag for simulation mode. 
+        Default is False
+        
+    specname : Optional[str]
+        verion of spec being used
+        TODO: can we remove this? It doesn't seem to be used.
+        
+    spec_data_dir : Path
+        Path to location in filesystem where spec stores the raw data.
+        
+    spec_det_dir : Path
+        Path to location in filesystem where spec stores the config data.
+        TODO: double check useage.
+        
+    sample_name : str
+        Name of the sample to use for saving files. 
+        
+    reduction_dir : Path
+        Location in the filesystem for a directory where the reduced data will be stored.
+        
+    reduced_sample_dir : Path
+        Location in the filesystem where files for this sample will be stored.
+        
+    Properties
+    ----------
+    wafer_coords()
+        locations in wafer-space coordinates to use in live experiment.
+    
+    composition_domain()
+        Domain of the wafer in composition-space
+    
+    composition_domain_2d()
+        Domain of the wafer in the 2D projection of the 3 compoent simplex of composition space. 
+
+    diffraction_space()
+        Values of the diffraction space (e.g q values or 2theta values) for each bin of the measurement. 
+    
+    Methods
+    -------
+    load_wafer_file()
+        Method to load the locations and compositions of the wafer sample. 
+
+     move_and_measure(self, indexes)
+        Method to move to the location or composition specified by the index,
+        and acquire XRD measurement there. 
+    """
+    
 
     simulation: bool = False
     specname: Optional[str] = None
