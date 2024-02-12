@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from hermes.base import Analysis
+from hermes._base import Analysis
 
 
 class SavedModel(Analysis):

@@ -4,9 +4,9 @@ Created on Tue Sep 27 12:15:35 2022
 
 @author: Austin McDannald
 """
-from hermes.base.analysis import Analysis
-from hermes.base.ds import BaseDS
-from hermes.base.pipelines import BaseDataPipeline
+from hermes._base.analysis import Analysis
+from hermes._base.ds import BaseDS
+from hermes._base.pipelines import BaseDataPipeline
 
 # from hermes.base.archive import BaseArchive
 

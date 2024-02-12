@@ -1,15 +1,15 @@
 """Top-level package for Hermes Python."""
 
 # For various convience functions
-# For builing autonomous loops
+# For building autonomous loops
 # For controling instruments
 # For data analysis tasks
 # For comparison measures
 # For archiving results
 from . import (
+    _base,
     acquire,
     archive,
-    base,
     classification,
     clustering,
     distance,
@@ -25,7 +25,7 @@ __email__ = "camilo.velezramirez@nist.gov"
 __version__ = "0.1.0"
 
 __all__ = [
-    "base",
+    "_base",
     "archive",
     "distance",
     "similarity",

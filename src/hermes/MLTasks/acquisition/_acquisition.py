@@ -5,8 +5,7 @@ from typing import Optional
 
 import numpy as np
 import tensorflow as tf
-from pydantic import Field
-from pydantic.dataclasses import dataclass as typesafedataclass
+from pydantic.dataclasses import dataclass
 from scipy.special import erf
 
 
