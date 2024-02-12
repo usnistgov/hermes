@@ -6,9 +6,9 @@ from dataclasses import field
 from pathlib import Path
 from typing import Any, Optional, Type, Union
 
-import h5py
+import h5py  # type: ignore
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
@@ -499,7 +499,7 @@ if GPC_INSTALLED:
         def load(cls, path: Union[str, Path], t: Optional[int]) -> "HeteroscedasticGPC":
             """Load trained object and model from a file."""
             with h5py.File(str(path), "r") as file:
-                kernel_name = file["kernel/name"][()].decode()  # type: ignore
+                kernel_name = file["kernel/name"][()].decode()  # type: ignore # pylint: disable=E1101
                 kernel_variance = file["kernel/variance"][()]  # type: ignore
                 kernel_lengthscales = file["kernel/lengthscales"][()]  # type: ignore
                 probabilities = file["probabilities"][()]  # type: ignore
