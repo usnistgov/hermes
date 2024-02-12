@@ -1,15 +1,16 @@
 """Acquisition Functions"""
 
-from ._acquire import (
-    Acquisition, 
-    Random,
+from ._acquisition import (
+    Acquisition,
+    ExpectedImprovement,
+    ProbabilityofImprovement,
     PureExploit,
     PureExplore,
-    UpperConfidenceBound,
+    Random,
     ScheduledUpperConfidenceBound,
     ThompsonSampling,
-    ProbabilityofImprovement,
-    ExpectedImprovement)
+    UpperConfidenceBound,
+)
 
 __all__ = [
     "Acquisition",
@@ -20,5 +21,5 @@ __all__ = [
     "ScheduledUpperConfidenceBound",
     "ThompsonSampling",
     "ProbabilityofImprovement",
-    "ExpectedImprovement"
+    "ExpectedImprovement",
 ]

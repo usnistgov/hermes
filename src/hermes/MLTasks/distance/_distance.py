@@ -10,12 +10,11 @@ from scipy.stats import wasserstein_distance
 from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import haversine_distances
 
-from hermes.base import BaseDS
+from hermes._base import BaseDS
+from hermes.utils import _default_ndarray
 
 # from orix.quaternion.orientation import Misorientation
 # from orix.quaternion import symmetry
-
-from hermes.utils import _default_ndarray
 
 
 @dataclass

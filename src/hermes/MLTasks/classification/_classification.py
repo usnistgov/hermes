@@ -12,7 +12,7 @@ import tensorflow as tf
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
-from hermes.base import Analysis
+from hermes._base import Analysis
 
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
@@ -387,7 +387,9 @@ if GPC_INSTALLED:
         """
 
         # Probabilistic labeling
-        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        probabilities: (
+            np.ndarray
+        )  # NxC matrix, where C is the number of clusters - rows must sum to 1.
         _from_trained: bool = False
 
         def __init__(self, from_trained: bool = False, **kwargs):
@@ -601,7 +603,9 @@ if GPC_INSTALLED:
         """
 
         # Probabilistic labeling
-        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        probabilities: (
+            np.ndarray
+        )  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
         def __post_init__(self):
             self._generate_model()
@@ -651,7 +655,7 @@ if GPC_INSTALLED:
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
-                options={"maxiter":1000},
+                options={"maxiter": 1000},
             )
 
             # self.model = m
