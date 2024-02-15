@@ -4,6 +4,11 @@
 Created on Tue Sep 27 11:57:27 2022
 
 @author: Aaron Kusne, aaron.kusne@nist.gov
+
+These are tools for jointly infering the material structure and functional property maps.
+The joint inference is based in the material science concept that the structure is informative of the functional property, and vice versa.
+Therefore changes in the structure should be informative of changes in the functional property.
+And changes in the functional property should be informative of a change in the structure. 
 """
 
 import logging
@@ -54,10 +59,6 @@ import functools
 import math
 import time
 
-try:
-    from cdlib import algorithms
-except ModuleNotFoundError:
-    logger.warning("No CDLIB found")
 from pydantic.dataclasses import dataclass as typesafedataclass
 
 from hermes.base import Analysis
@@ -278,8 +279,11 @@ class SAGE_1D(Joint):
     
 @typesafedataclass(config=_Config)
 class SAGE_ND(Joint):
-    """Class for 1D SAGE: joint segmentation and regression algorithms.
-    Currently set up for only one change point."""
+    """Class for ND SAGE: joint segmentation and regression algorithms.
+
+    This class assumes that there is 1 set structure measument discrite labels.
+    There can be multiple sets of functional property measurements, if they are measured at the same location. 
+    """
     
     # needed inputs
     num_phase_regions: int
@@ -422,9 +426,9 @@ class SAGE_ND(Joint):
     def model_SAGE_ND(self, xs, ys, xf, yf, num_regions, gpc_var_bounds, gpc_ls_bounds, \
                     gpr_var_bounds, gpr_ls_bounds, gpr_bias_bounds, gpr_noise_bounds):
         # assumes all function property measurements measured at same locations.
-        Ns = ys.shape[0]
-        Nf = yf.shape[0]
-        Mf = yf.shape[1]
+        Ns = ys.shape[0] #number of observations of structure 
+        Nf = yf.shape[0] #number of observations of functional properties 
+        Mf = yf.shape[1] # number of functional properties that were measured. 
         Nsf = xs.shape[0] + xf.shape[0]
         x_ = jnp.vstack((xs,xf))
 
@@ -607,8 +611,11 @@ class SAGE_ND(Joint):
 
 @typesafedataclass(config=_Config)
 class SAGE_ND_Coreg(Joint):
-    """Class for 1D SAGE: joint segmentation and regression algorithms.
-    Currently set up for only one change point."""
+    """Class for ND SAGE co-regionalization: joint segmentation and regression algorithms.
+
+    This class allows for multiple sets of structure labels, 
+    And multiple sets of functional property measurements.
+    """
       
     # needed inputs
     num_phase_regions: int
@@ -739,8 +746,8 @@ class SAGE_ND_Coreg(Joint):
         # assumes all function property measurements measured at same locations.
         jitter = self.jitter
 
-        Ns = np.array([xs_[i].shape[0] for i in range(len(xs_))], dtype=np.int64)
-        Nf = np.array([xf_[i].shape[0] for i in range(len(xf_))], dtype=np.int64)
+        Ns = np.array([xs_[i].shape[0] for i in range(len(xs_))], dtype=np.int64) #total number of structure observations
+        Nf = np.array([xf_[i].shape[0] for i in range(len(xf_))], dtype=np.int64) #total number of functional property observations
 
         Ns_indices = np.concatenate( (np.zeros((1), dtype = np.int64), Ns.cumsum()) )
         Nf_indices = np.concatenate( (np.zeros((1), dtype = np.int64), Nf.cumsum()) )
