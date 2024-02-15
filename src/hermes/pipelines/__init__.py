@@ -11,13 +11,8 @@ from hermes.pipelines.AL import (
 from hermes.pipelines.base import (
     Archiver,
     Classification,
-    ClassificationRegression,
     Cluster,
     ClusterClassification,
-    ClusterClassificationRegression,
-    ClusterRegression,
-    Pipeline,
-    Regression,
 )
 from hermes.pipelines.exhaustive import (
     ExhaustiveClassification,
@@ -29,16 +24,10 @@ from hermes.pipelines.exhaustive import (
 )
 
 __all__ = [
-    "Pipeline",
     "Archiver",
     "Classification",
-    "ClassificationRegression",
     "Cluster",
     "ClusterClassification",
-    "ClusterClassificationRegression",
-    "ClusterRegression",
-    "Regression",
-    "ALClassificationRegression",
     "ALCluster",
     "ALClusterClassification",
     "ALClusterClassificationRegression",
