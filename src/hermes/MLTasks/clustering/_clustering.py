@@ -5,27 +5,26 @@ Created on Tue Sep 27 11:57:27 2022
 
 @author: Austin McDannald
 """
-
 import logging
 from dataclasses import field
 from typing import Any, Optional
 
-import networkx as nx
+import networkx as nx  # type: ignore
 import numpy as np
+from pydantic.dataclasses import dataclass as typesafedataclass
+from scipy.spatial import Delaunay  # type: ignore
+from sklearn.cluster import SpectralClustering  # type: ignore
+
+from hermes._base import Analysis
+from hermes.MLTasks.distance import BaseDistance, EuclideanDistance
+from hermes.MLTasks.similarity import BaseSimilarity, SquaredExponential
+from hermes.utils import _check_attr, _default_ndarray
 
 logger = logging.getLogger("hermes")
 try:
-    from cdlib import algorithms
+    from cdlib import algorithms  # type: ignore
 except ModuleNotFoundError:
     logger.warning("No CDLIB found")
-from pydantic.dataclasses import dataclass as typesafedataclass
-from scipy.spatial import Delaunay
-from sklearn.cluster import SpectralClustering
-
-from hermes.base import Analysis
-from hermes.distance import BaseDistance, EuclideanDistance
-from hermes.similarity import BaseSimilarity, SquaredExponential
-from hermes.utils import _check_attr, _default_ndarray
 
 
 class UnspecifiedType(Exception):
@@ -44,7 +43,6 @@ class UnspecifiedType(Exception):
 
 class _Config:  # pylint: disable=too-few-public-methods
     arbitrary_types_allowed = True
-    # validate_assignment = True
 
 
 @typesafedataclass(config=_Config)
@@ -124,7 +122,7 @@ class Cluster(Analysis):
     measurements_distance: np.ndarray = field(
         init=False,
         default_factory=_default_ndarray,
-        repr=False
+        repr=False,
         # init=False, repr=False
     )
     measurements_similarity: np.ndarray = field(
@@ -146,8 +144,10 @@ class Cluster(Analysis):
         init=False, default_factory=_default_ndarray, repr=False
     )
 
-    """Automatically re-calculate all the distances and similarities when the atributes are set.
-    This prevents miss-labeling the distances when the type is changed after the initial calcuation."""
+    """Automatically re-calculate all the distances and
+    similarities when the atributes are set.
+    This prevents miss-labeling the distances when the
+    type is changed after the initial calcuation."""
 
     def __setattr__(self, __name: str, __value: Any):
         if __name == "measurements_distance_type":
@@ -532,8 +532,10 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
     max_K: int = 10
 
     def cluster(self):
+        """Cluster the graph using gap statistic."""
         G = self.graph
         K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+        # TODO: define gap_statistic
         labels = self.method(K)
         self.get_local_membership_prob()
 

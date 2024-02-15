@@ -1,7 +1,9 @@
-import numpy as np
-import tensorflow as tf
+"""Predict from saved model."""
 
-from hermes.base import Analysis
+import numpy as np
+import tensorflow as tf  # type: ignore
+
+from hermes._base import Analysis
 
 
 class SavedModel(Analysis):

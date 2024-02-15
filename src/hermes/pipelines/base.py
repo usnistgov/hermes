@@ -7,9 +7,9 @@ from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
 from hermes.archive import Archiver
-from hermes.classification import Classification as ClassificationMethod
-from hermes.clustering import Cluster as ClusterMethod
 from hermes.instruments import Instrument
+from hermes.MLTasks.classification import Classification as ClassificationMethod
+from hermes.MLTasks.clustering import Cluster as ClusterMethod
 
 # Pipeline = ForwardRef("Pipeline")
 # Convergence = ForwardRef("Convergence")
@@ -52,40 +52,40 @@ class ClusterClassification(Pipeline):
     archiver: Optional[Type[Archiver]] = None
 
 
-@dataclass(config=_Config)
-class Regression(Pipeline):
-    """Regression Pipeline."""
+# @dataclass(config=_Config)
+# class Regression(Pipeline):
+#     """Regression Pipeline."""
 
-    regression_method: Optional[Type[RegressionMethod]] = None
-    archiver: Optional[Type[Archiver]] = None
-
-
-@dataclass(config=_Config)
-class ClusterClassificationRegression(Pipeline):
-    """Cluster-Classification-Regression Pipeline."""
-
-    cluster_method: Optional[Type[ClusterMethod]] = None
-    classification_method: Optional[Type[ClassificationMethod]] = None
-    regression_method: Optional[Type[RegressionMethod]] = None
-    archiver: Optional[Type[Archiver]] = None
+#     regression_method: Optional[Type[RegressionMethod]] = None
+#     archiver: Optional[Type[Archiver]] = None
 
 
-@dataclass(config=_Config)
-class ClassificationRegression(Pipeline):
-    """Classification-Regression Pipeline."""
+# # @dataclass(config=_Config)
+# # class ClusterClassificationRegression(Pipeline):
+# #     """Cluster-Classification-Regression Pipeline."""
 
-    classification_method: Optional[Type[ClassificationMethod]] = None
-    regression_method: Optional[Type[RegressionMethod]] = None
-    archiver: Optional[Type[Archiver]] = None
+# #     cluster_method: Optional[Type[ClusterMethod]] = None
+# #     classification_method: Optional[Type[ClassificationMethod]] = None
+# #     regression_method: Optional[Type[RegressionMethod]] = None
+# #     archiver: Optional[Type[Archiver]] = None
 
 
-@dataclass(config=_Config)
-class ClusterRegression(Pipeline):
-    """Cluster-Regression Pipeline."""
+# # @dataclass(config=_Config)
+# # class ClassificationRegression(Pipeline):
+# #     """Classification-Regression Pipeline."""
 
-    cluster_method: Optional[Type[ClusterMethod]] = None
-    regression_method: Optional[Type[RegressionMethod]] = None
-    archiver: Optional[Type[Archiver]] = None
+# #     classification_method: Optional[Type[ClassificationMethod]] = None
+# #     regression_method: Optional[Type[RegressionMethod]] = None
+# #     archiver: Optional[Type[Archiver]] = None
+
+
+# @dataclass(config=_Config)
+# class ClusterRegression(Pipeline):
+#     """Cluster-Regression Pipeline."""
+
+#     cluster_method: Optional[Type[ClusterMethod]] = None
+#     regression_method: Optional[Type[RegressionMethod]] = None
+#     archiver: Optional[Type[Archiver]] = None
 
 
 # subclass into: active learning, clustering classifi

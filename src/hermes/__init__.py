@@ -1,40 +1,28 @@
 """Top-level package for Hermes Python."""
 
 # For various convience functions
-# For builing autonomous loops
+# For building autonomous loops
 # For controling instruments
 # For data analysis tasks
 # For comparison measures
 # For archiving results
-from . import (
-    acquire,
-    archive,
-    base,
-    classification,
-    clustering,
-    distance,
-    instruments,
-    loopcontrols,
-    pipelines,
-    similarity,
-    utils,
-)
+from hermes.bailiwick import PhaseID, SpectralProbability
+from hermes.MLTasks import acquisition, classification, clustering, distance, similarity
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
 __version__ = "0.1.0"
 
 __all__ = [
-    "base",
     "archive",
     "distance",
     "similarity",
     "clustering",
     "classification",
-    "acquire",
+    "acquisition",
     "instruments",
-    "loopcontrols",
     "pipelines",
-    "Pipeline",
+    "PhaseID",
+    "SpectralProbability",
     "utils",
 ]

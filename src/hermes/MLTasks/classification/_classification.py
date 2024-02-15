@@ -6,13 +6,13 @@ from dataclasses import field
 from pathlib import Path
 from typing import Any, Optional, Type, Union
 
-import h5py
+import h5py  # type: ignore
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
-from hermes.base import Analysis
+from hermes._base import Analysis
 
 warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
@@ -387,7 +387,9 @@ if GPC_INSTALLED:
         """
 
         # Probabilistic labeling
-        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        probabilities: (
+            np.ndarray
+        )  # NxC matrix, where C is the number of clusters - rows must sum to 1.
         _from_trained: bool = False
 
         def __init__(self, from_trained: bool = False, **kwargs):
@@ -521,7 +523,7 @@ if GPC_INSTALLED:
         def load(cls, path: Union[str, Path], t: Optional[int]) -> "HeteroscedasticGPC":
             """Load trained object and model from a file."""
             with h5py.File(str(path), "r") as file:
-                kernel_name = file["kernel/name"][()].decode()  # type: ignore
+                kernel_name = file["kernel/name"][()].decode()  # type: ignore # pylint: disable=E1101
                 kernel_variance = file["kernel/variance"][()]  # type: ignore
                 kernel_lengthscales = file["kernel/lengthscales"][()]  # type: ignore
                 probabilities = file["probabilities"][()]  # type: ignore
@@ -601,7 +603,9 @@ if GPC_INSTALLED:
         """
 
         # Probabilistic labeling
-        probabilities: np.ndarray  # NxC matrix, where C is the number of clusters - rows must sum to 1.
+        probabilities: (
+            np.ndarray
+        )  # NxC matrix, where C is the number of clusters - rows must sum to 1.
 
         def __post_init__(self):
             self._generate_model()
@@ -651,7 +655,7 @@ if GPC_INSTALLED:
                 self.model.training_loss_closure(),
                 self.model.trainable_variables,
                 method="tnc",
-                options={"maxiter":1000},
+                options={"maxiter": 1000},
             )
 
             # self.model = m
