@@ -535,6 +535,7 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
         """Cluster the graph using gap statistic."""
         G = self.graph
         K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+        # TODO: define gap_statistic
         labels = self.method(K)
         self.get_local_membership_prob()
 
