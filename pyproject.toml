@@ -23,7 +23,7 @@ requires-python = "<3.11, >=3.8"
 version = "0.1.0"
 
 [project.optional-dependencies]
-all = ["hermes[chess, clustering, gp, powder-diffractometers]"]
+all = ["hermes[chess, clustering, gp, joint, powder-diffractometers]"]
 chess = [
   "hermes[powder-diffractometers]",
   "certif-pyspec>=1.5.3",
@@ -34,6 +34,13 @@ clustering = [
 ]
 gp = [
   "gpflow>=2.7.1",
+]
+joint = [
+  "gpjax",
+  "jax",
+  "torch",
+  "numpyro",
+  "scipy",
 ]
 powder-diffractometers = [
   "pyfai>=2023.5.0",
