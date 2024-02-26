@@ -47,3 +47,12 @@ where <my_token> is your personal access [GitHub Token](https://docs.github.com/
 
 - Persistant Storage: 
 -       Basic functions for data storage and database design/use.
+
+
+## Coorespondence
+Austin McDannald
+austin.mcdannald@nist.gov
+National Institute of Standards and Technology
+Material Measurement Laboratory
+Materials Measurment Science Division
+Data and AI-Driven Materials Science Group
