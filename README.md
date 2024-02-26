@@ -1,5 +1,8 @@
 # hermes
 
+## Development
+This code base is under active development.
+
 ## Installation
 
 We use `poetry` as our main package and dependency manager. We recommend using `poetry` to
