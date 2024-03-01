@@ -13,43 +13,41 @@ And changes in the functional property should be informative of a change in the 
 """
 
 import logging
+import time
 from dataclasses import field
-from typing import Any
+from typing import Any, Union
 
-logger = logging.getLogger("hermes")
-
+import gpjax as gpx
+import jax
+import jax.numpy as jnp
 import numpy as np
 import numpyro
 import numpyro.distributions as ndist
 import pyro
 import pyro.distributions as dist
 import torch
+from jax import config
+from jax.lax import dynamic_slice
 from numpyro import handlers
 from numpyro.infer import MCMC as nMCMC
 from numpyro.infer import NUTS as nNUTS
 from numpyro.infer import SVI as nSVI
 from numpyro.infer import Trace_ELBO as nTrace_ELBO
 from numpyro.infer.initialization import init_to_value
+from pydantic.dataclasses import dataclass as typesafedataclass
 from pyro.infer import MCMC, NUTS, Predictive
 from scipy.stats import entropy
 from torch.nn.functional import one_hot
-
-torch.set_default_dtype(torch.float64)
-
-import jax
-import jax.numpy as jnp
-from jax import config
-
-config.update("jax_enable_x64", True)
-import time
-
-import gpjax as gpx
-from jax.lax import dynamic_slice
-from pydantic.dataclasses import dataclass as typesafedataclass
 from tqdm import tqdm, trange
 
 from hermes.base import Analysis
 from hermes.utils import _default_ndarray
+
+logger = logging.getLogger("hermes")
+torch.set_default_dtype(torch.float64)
+
+
+config.update("jax_enable_x64", True)
 
 
 class UnspecifiedType(Exception):
@@ -72,8 +70,64 @@ class Joint(Analysis):
 
 @typesafedataclass(config=_Config)
 class SAGE1D(Joint):
-    """Class for 1D SAGE: joint segmentation and regression algorithms.
-    Currently set up for only one change point."""
+    """
+    Joint segmentation and regression algorithms.
+    Currently set up for only one change point.
+
+    Attributes
+    ----------
+    num_phase_regions : int
+        regions
+    num_samples : int
+        samples
+    num_warmup : int
+        warmup
+    target_accept_prob : float
+        accept
+    max_tree_depth : int
+        max
+    jitter : float
+        jitter
+    locations_structure : np.ndarray, default=np.array([])
+        description
+    locations_functional_property : np.ndarray, default=np.array([])
+        description
+    locations_prediction : np.ndarray, default=np.array([])
+        description
+    target_structure_labels : np.ndarray, default=np.array([])
+        description
+    target_functional_properties : np.ndarray, default=np.array([])
+        description
+    gpr_bias_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_variance_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_lengthscale_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_noise_bounds : np.ndarray, default=np.array([])
+        description
+    change_point_bounds : np.ndarray, default=np.array([])
+        description
+    predictions : np.ndarray, default=np.array([])
+        description
+
+
+    Methods
+    -------
+    run()
+        Run model.
+    predict_unmeasured()
+        Predict the model on the unmeasured locations of the domain.
+    save(path)
+        Save the model to a file.
+    load(path)
+        Load model from a file.
+    load_params(other)
+        Load hyperparameters from another model.
+    save_params(path)
+        Save the parameters of the model to a HDF5 file.
+
+    """
 
     # needed inputs
     num_phase_regions: int
@@ -96,9 +150,15 @@ class SAGE1D(Joint):
     change_point_bounds: np.ndarray = field(default_factory=_default_ndarray)
 
     # Outputs
+    # TODO type annotation, {} inmutable?
     predictions = {}
 
-    def run(self):
+    def run(self) -> None:
+        """Run the model.
+
+        Description here.
+
+        """
         xs = to_torch(self.locations_structure).double()
         ys = to_torch(self.target_structure_labels).long()
         xf = to_torch(self.locations_functional_property).double()
@@ -200,21 +260,52 @@ class SAGE1D(Joint):
 
     def model_SAGE_1D(
         self,
-        xs,
-        ys,
-        xf,
-        yf,
-        num_regions,
-        gpr_var_bounds,
-        gpr_ls_bounds,
-        gpr_noise_bounds,
-        cp_bounds,
-        gpr_bias_bounds,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+        cp_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
     ):
+        """
+        Model for SAGE 1D.
 
+        Parameters
+        ----------
+            xs : torch.Tensor
+                Input tensor for training samples.
+            ys : torch.Tensor
+                Target tensor for training samples.
+            xf : torch.Tensor
+                Input tensor for test samples.
+            yf : torch.Tensor
+                Target tensor for test samples.
+            num_regions : int
+                Number of regions.
+            gpr_var_bounds : tuple, list
+                Bounds for Gaussian Process Regression (GPR) variance.
+            gpr_ls_bounds : tuple, list
+                Bounds for GPR lengthscale.
+            gpr_noise_bounds : tuple, list
+                Bounds for GPR noise.
+            cp_bounds : tuple, list
+                Bounds for changepoint.
+            gpr_bias_bounds : tuple, list
+                Bounds for GPR bias.
+
+        Returns
+        ------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+        """
         Mf = yf.shape[1]
         Nf = xf.shape[0]
         Ns = xs.shape[0]
+        # TODO: Nsf not used
         Nsf = Ns + Nf
         Xsf = torch.vstack((xs, xf))
 
@@ -284,7 +375,49 @@ class SAGE1D(Joint):
         pyro.deterministic("llk", llk)
         pyro.factor("obs", llk)
 
-    def predict_SAGE_1D(self, samples, i, xs, Xnew, num_regions, xf, yf):
+    # TODO: do docstring (Camilo)
+    # TODO: add type hints
+    # TODO: xs not used
+    def predict_SAGE_1D(
+        self,
+        samples: dict[str, Any],
+        i: int,
+        xs: np.ndarray,
+        Xnew: np.ndarray,
+        num_regions: int,
+        xf: np.ndarray,
+        yf: np.ndarray,
+    ):
+        """
+        Predict the phase region labels and functional properties for new data.
+
+        Parameters
+        ----------
+        samples : dict
+            Dictionary containing the samples for the Gaussian Process Regression (GPR) model.
+        i : int
+            Index of the sample to use from the `samples` dictionary.
+        xs : np.ndarray
+            Array containing the input data for the phase region labels.
+        Xnew : np.ndarray
+            Array containing the new input data for prediction.
+        num_regions : int
+            Number of phase regions.
+        xf : np.ndarray
+            Array containing the input data for the functional properties.
+        yf : np.ndarray
+            Array containing the target values for the functional properties.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the following arrays:
+            - probs (np.ndarray): Array of shape (Nnew, num_regions) representing the predicted probabilities for each phase region label.
+            - f_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing the piecewise function values.
+            - f_sample (np.ndarray): Array of shape (Nnew, Mf, 1) representing the sampled function values.
+            - F (np.ndarray): Array of shape (Nnew, num_regions, Mf) representing the mean function values for each phase region and functional property.
+            - v_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing the piecewise function variances.
+        """
         Nnew = Xnew.shape[0]
         Mf = yf.shape[1]
         gpr_new_mean_regions = torch.zeros((Nnew, Mf, num_regions))
@@ -342,26 +475,74 @@ class SAGE1D(Joint):
             np.array(v_piecewise),
         )
 
-        if type(X) is np.ndarray:
-            X = torch.tensor(X)
-        cp, _ = torch.sort(cp)
-        cl = torch.zeros((X.shape[0])).long()
-        N = cp.shape[0]  # N = 3
-        for i in range(0, N):
-            if i < N - 1:
-                idx = torch.logical_and(X > cp[i], X < cp[i + 1])
-            elif i == N - 1:
-                idx = X > cp[i]
-            cl[idx.flatten()] = i + 1
-        return cl
+        # TODO: the same as line 1515
+        # if type(X) is np.ndarray:
+        #     X = torch.tensor(X)
+        # cp, _ = torch.sort(cp)
+        # cl = torch.zeros((X.shape[0])).long()
+        # N = cp.shape[0]  # N = 3
+        # for i in range(0, N):
+        #     if i < N - 1:
+        #         idx = torch.logical_and(X > cp[i], X < cp[i + 1])
+        #     elif i == N - 1:
+        #         idx = X > cp[i]
+        #     cl[idx.flatten()] = i + 1
+        # return cl
 
 
 @typesafedataclass(config=_Config)
 class SAGEND(Joint):
-    """Class for ND SAGE: joint segmentation and regression algorithms.
+    """Joint segmentation and regression algorithms.
 
     This class assumes that there is 1 set structure measument discrite labels.
     There can be multiple sets of functional property measurements, if they are measured at the same location.
+
+    Attributes
+    ----------
+    num_phase_regions : int
+        regions
+    num_samples : int
+        samples
+    num_warmup : int
+        warmup
+    num_chains : int
+        chains
+    target_accept_prob : float
+        accept
+    max_tree_depth : int
+        max
+    phase_map_SVI_num_steps : int
+        steps
+    jitter : float
+        jitter
+    Adam_step_size : float
+        step
+    posterior_sampling : int
+        sampling
+    locations_structure : np.ndarray, default=np.array([])
+        description
+    locations_functional_property : np.ndarray, default=np.array([])
+        description
+    locations_prediction : np.ndarray, default=np.array([])
+        description
+    target_structure_labels : np.ndarray, default=np.array([])
+        description
+    target_functional_properties : np.ndarray, default=np.array([])
+        description
+    gpc_variance_bounds : np.ndarray, default=np.array([])
+        description
+    gpc_lengthscale_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_bias_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_variance_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_lengthscale_bounds : np.ndarray, default=np.array([])
+        description
+    gpr_noise_bounds : np.ndarray, default=np.array([])
+        description
+    key : np.ndarray, default=np.array([])
+        description, not initialized by user
     """
 
     # needed inputs
@@ -392,9 +573,17 @@ class SAGEND(Joint):
     key = jax.random.PRNGKey(0)
 
     # Outputs
+    # TODO type annotation
     predictions = {}
 
     def run(self):
+        """Run the model.
+
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+        """
         xs = jnp.asarray(self.locations_structure, dtype=jnp.float64)
         ys = jnp.asarray(self.target_structure_labels, dtype=jnp.integer)
         xf = jnp.asarray(self.locations_functional_property, dtype=jnp.float64)
@@ -410,6 +599,7 @@ class SAGEND(Joint):
         num_regions = self.num_phase_regions
         num_proc = self.num_chains
 
+        # TODO make this private?
         def predict_sage(post_samples, model, *args, **kwargs):
             model = handlers.seed(handlers.condition(model, post_samples), self.key)
             model_trace = handlers.trace(model).get_trace(*args, **kwargs)
@@ -421,6 +611,7 @@ class SAGEND(Joint):
                 model_trace["v_piecewise"]["value"],
             )
 
+        # TODO many vars unused
         predict_fn_sage_1core = lambda samples: predict_sage(
             samples,
             self.predict_SAGE_ND,
@@ -569,18 +760,122 @@ class SAGEND(Joint):
 
     def model_SAGE_ND(
         self,
-        xs,
-        ys,
-        xf,
-        yf,
-        num_regions,
-        gpc_var_bounds,
-        gpc_ls_bounds,
-        gpr_var_bounds,
-        gpr_ls_bounds,
-        gpr_bias_bounds,
-        gpr_noise_bounds,
-    ):
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> None:
+        """
+        Model for SAGE ND.
+
+        Parameters
+        ----------
+        xs : torch.Tensor
+            Tensor containing the observations of the structure.
+        ys : torch.Tensor
+            Tensor containing the measurements of the structure.
+        xf : torch.Tensor
+            Tensor containing the observations of the functional properties.
+        yf : torch.Tensor
+            Tensor containing the measurements of the functional properties.
+        num_regions : int
+            Number of regions (segments) to consider.
+        gpc_var_bounds : Union[tuple, list]
+            Bounds for the variance of the Gaussian Process Classifier (GPC).
+        gpc_ls_bounds : Union[tuple, list]
+            Bounds for the lengthscale of the Gaussian Process Classifier (GPC).
+        gpr_var_bounds : Union[tuple, list]
+            Bounds for the variance of the Gaussian Process Regression (GPR).
+        gpr_ls_bounds : Union[tuple, list]
+            Bounds for the lengthscale of the Gaussian Process Regression (GPR).
+        gpr_bias_bounds : Union[tuple, list]
+            Bounds for the bias of the Gaussian Process Regression (GPR).
+        gpr_noise_bounds : Union[tuple, list]
+            Bounds for the noise of the Gaussian Process Regression (GPR).
+
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+        """
+        # Function implementation goes here
+
+    def model_SAGE_ND(
+        self,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> None:
+        """
+        Model for SAGE ND.
+
+        Parameters
+        ----------
+        xs : torch.Tensor
+            Tensor containing the observations of the structure.
+        ys : torch.Tensor
+            Tensor containing the measurements of the structure.
+        xf : torch.Tensor
+            Tensor containing the observations of the functional properties.
+        yf : torch.Tensor
+            Tensor containing the measurements of the functional properties.
+        num_regions : int
+            Number of regions (segments) to consider.
+        gpc_var_bounds : Union[tuple, list]
+            Bounds for the variance of the Gaussian Process Classifier (GPC).
+        gpc_ls_bounds : Union[tuple, list]
+            Bounds for the lengthscale of the Gaussian Process Classifier (GPC).
+        gpr_var_bounds : Union[tuple, list]
+            Bounds for the variance of the Gaussian Process Regression (GPR).
+        gpr_ls_bounds : Union[tuple, list]
+            Bounds for the lengthscale of the Gaussian Process Regression (GPR).
+        gpr_bias_bounds : Union[tuple, list]
+            Bounds for the bias of the Gaussian Process Regression (GPR).
+        gpr_noise_bounds : Union[tuple, list]
+            Bounds for the noise of the Gaussian Process Regression (GPR).
+
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+        """
+        # Rest of the code...
+
+    def model_SAGE_ND(
+        self,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> None:
+        """Model for SAGE ND.
+
+        Parameters
+        ----------
+
+        """
         # assumes all function property measurements measured at same locations.
         Ns = ys.shape[0]  # number of observations of structure
         Nf = yf.shape[0]  # number of observations of functional properties
@@ -719,20 +1014,147 @@ class SAGEND(Joint):
 
     def predict_SAGE_ND(
         self,
-        Xnew,
-        xs,
-        ys,
-        xf,
-        yf,
-        num_regions,
-        gpc_var_bounds,
-        gpc_ls_bounds,
-        gpr_var_bounds,
-        gpr_ls_bounds,
-        gpr_bias_bounds,
-        gpr_noise_bounds,
-    ):
+        Xnew: torch.Tensor,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> tuple:
+        """
+        Predict the phase region labels and functional properties for new data.
 
+        This function assumes that the phase region labels and functional properties are measured at the same locations.
+
+        Parameters
+        ----------
+        Xnew : torch.Tensor
+            The new data for which to predict the phase region labels and functional properties.
+        xs : torch.Tensor
+            The phase region labels measured at the same locations as the functional properties.
+        ys : torch.Tensor
+            The functional properties measured at the same locations as the phase region labels.
+        xf : torch.Tensor
+            The phase region labels for the training data.
+        yf : torch.Tensor
+            The functional properties for the training data.
+        num_regions : int
+            The number of phase regions.
+        gpc_var_bounds : Union[tuple, list]
+            The bounds for the variance of the Gaussian Process Classifier (GPC).
+        gpc_ls_bounds : Union[tuple, list]
+            The bounds for the lengthscale of the GPC.
+        gpr_var_bounds : Union[tuple, list]
+            The bounds for the variance of the Gaussian Process Regression (GPR).
+        gpr_ls_bounds : Union[tuple, list]
+            The bounds for the lengthscale of the GPR.
+        gpr_bias_bounds : Union[tuple, list]
+            The bounds for the bias of the GPR.
+        gpr_noise_bounds : Union[tuple, list]
+            The bounds for the noise of the GPR.
+
+        Returns
+        -------
+        tuple
+            gpc_new_probs_ : torch.Tensor
+            The predicted phase region labels for the new data.
+            f_piecewise_ : torch.Tensor
+            The predicted functional properties for the new data.
+            f_sample_ : torch.Tensor
+            The sampled functional properties for the new data.
+            Fr_new_ : torch.Tensor
+            The predicted phase region labels for the new data.
+            v_piecewise_ : torch.Tensor
+            The variance of the predicted functional properties for the new data.
+        """
+        # Function implementation goes here
+        # ...
+        return gpc_new_probs_, f_piecewise_, f_sample_, Fr_new_, v_piecewise_
+
+    def predict_SAGE_ND(
+        self,
+        Xnew: torch.Tensor,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> None:
+        """
+        Predict the phase region labels and functional properties for new data.
+
+        This function assumes that the phase region labels and functional properties are measured at the same locations.
+
+        Parameters
+        ----------
+        Xnew : torch.Tensor
+            The new data for which to predict the phase region labels and functional properties.
+        xs : torch.Tensor
+            The phase region labels measured at the same locations as the functional properties.
+        ys : torch.Tensor
+            The functional properties measured at the same locations as the phase region labels.
+        xf : torch.Tensor
+            The phase region labels for the training data.
+        yf : torch.Tensor
+            The functional properties for the training data.
+        num_regions : int
+            The number of phase regions.
+        gpc_var_bounds : Union[tuple, list]
+            The bounds for the variance of the Gaussian Process Classifier (GPC).
+        gpc_ls_bounds : Union[tuple, list]
+            The bounds for the lengthscale of the GPC.
+        gpr_var_bounds : Union[tuple, list]
+            The bounds for the variance of the Gaussian Process Regression (GPR).
+        gpr_ls_bounds : Union[tuple, list]
+            The bounds for the lengthscale of the GPR.
+        gpr_bias_bounds : Union[tuple, list]
+            The bounds for the bias of the GPR.
+        gpr_noise_bounds : Union[tuple, list]
+            The bounds for the noise of the GPR.
+
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+        """
+        # Function implementation goes here
+
+    def predict_SAGE_ND(
+        self,
+        Xnew: torch.Tensor,
+        xs: torch.Tensor,
+        ys: torch.Tensor,
+        xf: torch.Tensor,
+        yf: torch.Tensor,
+        num_regions: int,
+        gpc_var_bounds: Union[tuple, list],
+        gpc_ls_bounds: Union[tuple, list],
+        gpr_var_bounds: Union[tuple, list],
+        gpr_ls_bounds: Union[tuple, list],
+        gpr_bias_bounds: Union[tuple, list],
+        gpr_noise_bounds: Union[tuple, list],
+    ) -> None:
+        """
+        Predict the phase region labels and functional properties for new data.
+
+        This function assumes that the phase region labels and functional properties are measured at the same locations.
+
+        Parameters
+        ----------
+
+        """
         # assumes all function property measurements measured at same locations.
         key_in = self.key
         _, subkey = jax.random.split(key_in)
