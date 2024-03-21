@@ -116,16 +116,10 @@ class SAGE1D(Joint):
     -------
     run()
         Run model.
-    predict_unmeasured()
-        Predict the model on the unmeasured locations of the domain.
-    save(path)
-        Save the model to a file.
-    load(path)
-        Load model from a file.
-    load_params(other)
-        Load hyperparameters from another model.
-    save_params(path)
-        Save the parameters of the model to a HDF5 file.
+    model_SAGE_1D()
+        Model for SAGE 1D.
+    predict_SAGE_1D()
+        Predict the phase region labels and functional properties for new data.
 
     """
 
@@ -150,13 +144,21 @@ class SAGE1D(Joint):
     change_point_bounds: np.ndarray = field(default_factory=_default_ndarray)
 
     # Outputs
-    # TODO type annotation, {} inmutable?
-    predictions = {}
+    # TODO {} inmutable?
+    predictions: dict[str, Any] = {}
 
     def run(self) -> None:
-        """Run the model.
+        """Run the model and update the internal state of the object.
 
-        Description here.
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+            This function does not return any value, it performs the predictions and
+            saves the results in `self.predictions`.
 
         """
         xs = to_torch(self.locations_structure).double()
@@ -210,6 +212,7 @@ class SAGE1D(Joint):
 
         idx = torch.argmax(predictive["llk"])
         max_llk_sample_cp = nuts_posterior_samples["changepoint"][idx]
+        # TODO unused var
         (
             gpc_probs_mllk,
             gpr_mean_noiseless_mllk,
@@ -231,6 +234,7 @@ class SAGE1D(Joint):
         phase_region_labels_std = np.stack([item[0] for item in preds]).std(axis=0)
 
         # squeeze assumes 1 functional property:
+        # TODO unused var
         gpr_samples_noiseless = np.stack([item[1] for item in preds], axis=2).squeeze(
             axis=1
         )
@@ -298,7 +302,7 @@ class SAGE1D(Joint):
                 Bounds for GPR bias.
 
         Returns
-        ------
+        -------
         None
             This function does not return any value. It performs the prediction and updates the internal state of the object.
         """
@@ -412,11 +416,16 @@ class SAGE1D(Joint):
         -------
         tuple
             A tuple containing the following arrays:
-            - probs (np.ndarray): Array of shape (Nnew, num_regions) representing the predicted probabilities for each phase region label.
-            - f_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing the piecewise function values.
-            - f_sample (np.ndarray): Array of shape (Nnew, Mf, 1) representing the sampled function values.
-            - F (np.ndarray): Array of shape (Nnew, num_regions, Mf) representing the mean function values for each phase region and functional property.
-            - v_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing the piecewise function variances.
+            - probs (np.ndarray): Array of shape (Nnew, num_regions) representing
+            the predicted probabilities for each phase region label.
+            - f_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing
+            the piecewise function values.
+            - f_sample (np.ndarray): Array of shape (Nnew, Mf, 1) representing
+            the sampled function values.
+            - F (np.ndarray): Array of shape (Nnew, num_regions, Mf) representing
+            the mean function values for each phase region and functional property.
+            - v_piecewise (np.ndarray): Array of shape (Nnew, Mf, 1) representing
+            the piecewise function variances.
         """
         Nnew = Xnew.shape[0]
         Mf = yf.shape[1]
@@ -543,6 +552,17 @@ class SAGEND(Joint):
         description
     key : np.ndarray, default=np.array([])
         description, not initialized by user
+
+    Methods
+    -------
+    run()
+        Run model.
+    model_SAGE_ND()
+        Model for SAGE ND.
+    model_SAGE_ND_PM()
+        Model for SAGE ND PM.
+    predict_SAGE_ND()
+        Predict the phase region labels and functional properties for new data.
     """
 
     # needed inputs
@@ -573,16 +593,21 @@ class SAGEND(Joint):
     key = jax.random.PRNGKey(0)
 
     # Outputs
-    # TODO type annotation
-    predictions = {}
+    predictions: dict[str, Any] = {}
 
     def run(self):
-        """Run the model.
+        """Run the model and update the internal state of the object.
+
+        Parameters
+        ----------
+        None
 
         Returns
         -------
         None
-            This function does not return any value. It performs the prediction and updates the internal state of the object.
+            This function does not return any value, it performs the predictions and
+            saves the results in `self.predictions`.
+
         """
         xs = jnp.asarray(self.locations_structure, dtype=jnp.float64)
         ys = jnp.asarray(self.target_structure_labels, dtype=jnp.integer)
@@ -611,17 +636,18 @@ class SAGEND(Joint):
                 model_trace["v_piecewise"]["value"],
             )
 
-        # TODO many vars unused
-        predict_fn_sage_1core = lambda samples: predict_sage(
-            samples,
-            self.predict_SAGE_ND,
-            Xpred,
-            xs,
-            ys,
-            xf,
-            yf,
-            num_regions=num_regions,
-        )
+        # TODO many vars unused, necessary lambda?
+        def predict_fn_sage_1core(samples):
+            return predict_sage(
+                samples,
+                self.predict_SAGE_ND,
+                Xpred,
+                xs,
+                ys,
+                xf,
+                yf,
+                num_regions=num_regions,
+            )
 
         data = [xs, ys, xf, num_regions, gpc_var_bounds, gpc_ls_bounds]
 
@@ -799,6 +825,10 @@ class SAGEND(Joint):
         gpr_noise_bounds : tuple, list
             Bounds for GPR noise.
 
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
 
         """
         # TODO this returs None and
@@ -910,7 +940,7 @@ class SAGEND(Joint):
         num_regions: int,
         gpc_var_bounds: Union[tuple, list],
         gpc_ls_bounds: Union[tuple, list],
-    ):
+    ) -> None:
         """Model for SAGE ND PM.
 
         Parameters
@@ -928,6 +958,10 @@ class SAGEND(Joint):
         gpc_ls_bounds : tuple, list
             Bounds for GPC lengthscale.
 
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
         """
         # assumes all function property measurements measured at same locations.
         Ns = xs.shape[0]
@@ -1225,6 +1259,16 @@ class SAGENDCoreg(Joint):
     key : np.ndarray
         pseudo-random number generator (PRNG) key not initialized by user
 
+    Methods
+    -------
+    run()
+        Run model.
+    model_SAGE_ND_Coreg()
+        Model for SAGE ND Coreg.
+    model_SAGE_ND_Coreg_PM()
+        Model for SAGE ND Coreg PM.
+    predict_SAGE_ND_Coreg()
+        Predict the phase region labels and functional properties for new data.
     """
 
     # needed inputs
@@ -1255,18 +1299,21 @@ class SAGENDCoreg(Joint):
     key = jax.random.PRNGKey(0)
 
     # Outputs
-    # TODO typehint
-    predictions = {}
+    predictions: dict[str, Any] = {}
 
     def run(self) -> None:
-        """Run the model.
+        """Run the model and update the internal state of the object.
 
-        Description here.
+        Parameters
+        ----------
+        None
 
         Returns
-        ------
+        -------
         None
-            This function does not return any value. It performs the prediction and updates the internal state of the object.
+            This function does not return any value, it performs the predictions and
+            saves the results in `self.predictions`.
+
         """
         Xs_ = self.locations_structure
         ys_ = self.target_structure_labels
@@ -1457,6 +1504,11 @@ class SAGENDCoreg(Joint):
             Bounds for GPR bias.
         gpr_noise_bounds : tuple, list
             Bounds for GPR noise.
+
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
         """
 
         # assume all inputs are lists
@@ -1618,6 +1670,11 @@ class SAGENDCoreg(Joint):
         gpc_ls_bounds : tuple, list
             Bounds for GPC lengthscale.
 
+        Returns
+        -------
+        None
+            This function does not return any value. It performs the prediction and updates the internal state of the object.
+
         """
 
         # assume all inputs are lists
@@ -1693,7 +1750,7 @@ class SAGENDCoreg(Joint):
         gpr_ls_bounds: Union[tuple, list],
         gpr_bias_bounds: Union[tuple, list],
         gpr_noise_bounds: Union[tuple, list],
-    ) -> None:
+    ) -> tuple:
         """Predict for SAGE ND Coreg.
 
         Parameters
@@ -1723,6 +1780,10 @@ class SAGENDCoreg(Joint):
         gpr_noise_bounds : tuple, list
             Bounds for GPR noise.
 
+        Returns
+        -------
+        tuple
+            Tuple of predictions.
 
         """
 
@@ -1888,8 +1949,8 @@ class SAGENDCoreg(Joint):
 
 
 # TODO typehint
-def compute_f_torch(variance, lengthscales, bias, eta, X, jitter):
-    """Compute f."""
+def compute_f_torch(variance, lengthscales, bias, eta, X, jitter) -> torch.Tensor:
+    """Compute f with torch."""
     N = X.shape[0]
     K = RBF_torch(variance, lengthscales, X) + torch.eye(N) * jitter
     L = torch.linalg.cholesky(K)
@@ -1907,7 +1968,7 @@ def gpr_forward_torch(
     include_noise=True,
     prob_weights=None,
     jitter=1e-6,
-):
+) -> tuple:
     """Gaussian Process Regression Forward.
 
     Parameters
@@ -1930,6 +1991,11 @@ def gpr_forward_torch(
         Probability weights, by default None.
     jitter : float, optional
         Jitter, by default 1e-6.
+
+    Returns
+    -------
+    tuple
+        Mean, covariance, variance.
 
     """
     # n is new, t is train
@@ -2048,7 +2114,6 @@ def to_torch(v: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
     return torch.Tensor(v)
 
 
-# TODO typehint
 def subsample(samples: dict, step: int) -> dict:
     """Subsample dictionary.
 
@@ -2124,7 +2189,7 @@ def get_samples_split(samples: dict, num_proc: int, length: int, i: int) -> dict
     return s
 
 
-def logits_to_probs_jax(logits: np.ndarray) -> np.ndarray:
+def logits_to_probs_jax(logits: np.ndarray) -> jax.Array:
     """Logits to probabilities.
 
     Assumes obs x num_of_categories.
@@ -2136,7 +2201,7 @@ def logits_to_probs_jax(logits: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    probs: np.ndarray
+    probs: jax.Array
         Probabilities.
 
     """
@@ -2146,7 +2211,7 @@ def logits_to_probs_jax(logits: np.ndarray) -> np.ndarray:
     return probs
 
 
-def remap_array(v: np.ndarray) -> np.ndarray:
+def remap_array(v: np.ndarray) -> torch.Tensor:
     """Remap array.
 
     Parameters
@@ -2156,7 +2221,7 @@ def remap_array(v: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    vnew: np.ndarray
+    vnew: torch.Tensor
         Remapped array.
     """
     vnew = torch.zeros(v.shape)
@@ -2195,17 +2260,16 @@ def flip_keys_and_indices(samples: dict, step: int = 1):
     return s
 
 
-# TODO typehints
 def gpr_forward_jax(
-    variance,
-    lengthscales,
-    xtrain,
-    ytrain,
-    xnew,
-    noise_var,
+    variance: float,
+    lengthscales: np.ndarray,
+    xtrain: np.ndarray,
+    ytrain: np.ndarray,
+    xnew: np.ndarray,
+    noise_var: float,
     include_noise: bool = True,
     jitter: float = 1e-6,
-):
+) -> tuple:
     """Gaussian Process Regression Forward using Jax.
 
     Parameters
@@ -2226,6 +2290,11 @@ def gpr_forward_jax(
         Include noise, by default True.
     jitter : float, optional
         Jitter, by default 1e-6.
+
+    Returns
+    -------
+    tuple
+        Mean, covariance, variance.
     """
     # n is new, t is train
     K_nt = RBF_jax(variance, lengthscales, xnew, xtrain)
@@ -2242,15 +2311,15 @@ def gpr_forward_jax(
 
 
 def gpr_forward_matern52_jax(
-    variance,
-    lengthscale,
-    xtrain,
-    ytrain,
-    xnew,
-    noise_var,
-    include_noise=True,
-    jitter=1e-6,
-):
+    variance: float,
+    lengthscale: np.ndarray,
+    xtrain: np.ndarray,
+    ytrain: np.ndarray,
+    xnew: np.ndarray,
+    noise_var: float,
+    include_noise: bool = True,
+    jitter: float = 1e-6,
+) -> tuple:
     """Gaussian Process Regression Forward Matern52.
 
     Parameters
@@ -2271,6 +2340,11 @@ def gpr_forward_matern52_jax(
         Include noise, by default True.
     jitter : float, optional
         Jitter, by default 1e-6.
+
+    Returns
+    -------
+    tuple
+        Mean, covariance, variance.
     """
     # n is new, t is train
     K_nt = Matern52_2D_jax(variance, lengthscale, xnew, xtrain)
@@ -2362,7 +2436,7 @@ def Matern52_2D_jax(
 def euclidean_jax(
     X1: Union[torch.Tensor, np.ndarray],
     X2: Optional[Union[torch.Tensor, np.ndarray]] = None,
-) -> np.ndarray:
+) -> jax.Array:
     """Euclidean distance using Jax.
 
     Parameters
@@ -2374,7 +2448,7 @@ def euclidean_jax(
 
     Returns
     -------
-    np.ndarray
+    jax.Array
         Euclidean distance.
     """
     if X2 is None:
@@ -2391,7 +2465,7 @@ def compute_f_jax(
     eta: np.ndarray,
     X: np.ndarray,
     jitter: Optional[float] = 1e-6,
-) -> np.ndarray:
+) -> jax.Array:
     """Compute f using Jax.
 
     Parameters
@@ -2411,7 +2485,7 @@ def compute_f_jax(
 
     Returns
     -------
-    np.ndarray
+    jax.Array
         matrix mult.
 
     """
@@ -2428,7 +2502,7 @@ def compute_f_matern52_jax(
     eta: np.ndarray,
     X: np.ndarray,
     jitter: Optional[float] = 1e-6,
-) -> np.ndarray:
+) -> jax.Array:
     """Compute f matern52 using Jax.
 
     Parameters
@@ -2448,7 +2522,7 @@ def compute_f_matern52_jax(
 
     Returns
     -------
-    np.ndarray
+    jax.Array
         matrix mult.
     """
     N = X.shape[0]
