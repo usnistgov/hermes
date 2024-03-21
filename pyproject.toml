@@ -36,6 +36,7 @@ gp = [
   "gpflow>=2.7.1",
 ]
 joint = [
+  "dill",
   "gpjax",
   "jax",
   "torch",
