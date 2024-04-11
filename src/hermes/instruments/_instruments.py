@@ -74,14 +74,6 @@ class CombiPointByPoint(Instrument):
         Method for loading data from disk.
         i.e locations and compositions across the wafer. 
 
-    load_sim_data()
-        Method to load example measurements at the locations.
-        Used for simulation mode.
-
-    simulated_move_and_measure(self, compositions_locations)
-        Simulate moving to locations coorispoinding to the compositions and returning the example XRD measurements. 
-
-    
         
     """
     
