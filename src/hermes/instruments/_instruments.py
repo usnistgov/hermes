@@ -18,9 +18,7 @@ class Instrument:
     """Base level class for communicating with instruments."""
 
 
-@dataclass
-class Diffractometer(Instrument):
-    """Class for diffractometer instruments"""
+
 
 
 config1 = {"allow_arbitrary_types": True}
@@ -31,8 +29,10 @@ class _Config:  # pylint: disable=too-few-public-methods
 
 
 @typesafedataclass(config=_Config)
-class PowderDiffractometer(Diffractometer):
-    """Class for Powder (aka 1D) diffractometer instruments.
+class CombiPointByPoint(Instrument):
+    """
+    Class for instruments that measure point-by-point combinitorial wafers
+
     Typically expect the sample to be a combinatorial wafer (each location has a known, pre-determined composition),
     but ignore the composition information for general samples.
     
@@ -46,24 +46,12 @@ class PowderDiffractometer(Diffractometer):
         
     wafer_composition_file : Path
         Filesystem location of compositions of the wafer at each location in a tab delimited text file.
-        
-    wafer_xrd_file : Optional[Path]
-        Filesytem location of example XRD measurements at each location.
-        
-    diffraction_space_name : Optional[str]
-        The type of diffraction space (i.e. Q-space or 2theta).
-        
-    diffraction_space_name : Optional[int]
-        The number of bins over the diffraction space that the measurements.
-        
+             
     xy_locations : Optional[pd.DataFrame]
         Locations where the measurements
         
     compostions : Optional[pd.DataFrame]
         DataFrame of the chemical compostions at the measured locations.
-    
-    xrd_measurements : Optional[Union[pd.DataFrame, np.ndarray]]
-        XRD measurement at each measured location.
     
     Properties
     ----------
@@ -72,9 +60,6 @@ class PowderDiffractometer(Diffractometer):
     
     sim_composition_domain()
         domain in compostion space to use in simulation mode. 
-
-    sim_two_theta_space()
-        Diffraction space to use in simulation mode. 
 
     compositions_2d()
         Convert compositions given as a 3 component simplex (i.e. (A,B,C) compositions sum to 1)
@@ -90,7 +75,7 @@ class PowderDiffractometer(Diffractometer):
         i.e locations and compositions across the wafer. 
 
     load_sim_data()
-        Method to load example xrd measurements at the locations.
+        Method to load example measurements at the locations.
         Used for simulation mode.
 
     simulated_move_and_measure(self, compositions_locations)
@@ -107,10 +92,6 @@ class PowderDiffractometer(Diffractometer):
     wafer_coords_file: Path  # relative to wafer_directory
     # Location for wafer composition file (tab delimited .txt)
     wafer_composition_file: Optional[Path] = None  # relative to wafer_directory
-    # Location for XRD measurements file (tab delimited .txt)
-    wafer_xrd_file: Optional[Path] = None
-    diffraction_space_name: Optional[str] = "Q-space"
-    diffraction_space_bins: Optional[int] = None
 
     xy_locations: Optional[pd.DataFrame] = None
     compositions: Optional[pd.DataFrame] = None
@@ -127,34 +108,7 @@ class PowderDiffractometer(Diffractometer):
             self.compositions = pd.read_table(
                 self.wafer_directory.joinpath(self.wafer_composition_file)
             )
-        self.xrd_measurements = None
-        if self.diffraction_space_bins is not None:
-            self.xrd_measurements = np.array([]).reshape(
-                -1, self.diffraction_space_bins
-            )
 
-    def load_sim_data(self):
-        self.xrd_measurements = pd.read_table(
-            self.wafer_directory.joinpath(self.wafer_xrd_file)
-        )
-
-    def simulated_move_and_measure(self, compositions_locations):
-        """Move (in composition-space) to new locations
-        and return the XRD measurements."""
-
-        # # If the data for simulation mode hasn't been loaded, load it.
-        # if not self.xy_locations:
-        #     self.load_sim_data()
-
-        _check_attr(self, "compositions")
-        _check_attr(self, "xrd_measurements")
-        indexes = []
-        for comp in compositions_locations:
-            index = self.compositions[self.compositions.to_numpy() == comp].index[0]
-            indexes.append(index)
-
-        measurements = self.xrd_measurements.iloc[indexes, :].to_numpy()
-        return measurements
 
     @property
     def sim_wafer_coords(self):
@@ -169,13 +123,6 @@ class PowderDiffractometer(Diffractometer):
         components = self.compositions.columns.to_list()
         fractions = self.compositions.to_numpy()
         return components, fractions
-
-    @property
-    def sim_two_theta_space(self):
-        """Get the 2Theta values of the XRD measurements in degrees"""
-        _check_attr(self, "xrd_measurements")
-        two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
-        return two_theta
 
     @property
     def compositions_2d(self):
@@ -205,3 +152,88 @@ class PowderDiffractometer(Diffractometer):
         return points_2d
 
     # def compositions_2d_to_index(self, locations_2d):
+
+@typesafedataclass(config=_Config)
+class DiffractometerForCombi(CombiPointByPoint):
+    """
+    Class for instruments that measure point-by-point combinitorial wafers
+
+    Typically expect the sample to be a combinatorial wafer (each location has a known, pre-determined composition),
+    but ignore the composition information for general samples.
+    
+    Parameters
+    ----------      
+    wafer_xrd_file : Optional[Path]
+        Filesytem location of example XRD measurements at each location.
+        
+    diffraction_space_name : Optional[str]
+        The type of diffraction space (i.e. Q-space or 2theta).
+        
+    diffraction_space_name : Optional[int]
+        The number of bins over the diffraction space that the measurements.
+            
+    xrd_measurements : Optional[Union[pd.DataFrame, np.ndarray]]
+        XRD measurement at each measured location.
+    
+    Properties
+    ----------
+    sim_two_theta_space()
+        Diffraction space to use in simulation mode. 
+    
+    Methods
+    -------
+    load_sim_data()
+        Method to load example xrd measurements at the locations.
+        Used for simulation mode.
+
+    simulated_move_and_measure(self, compositions_locations)
+        Simulate moving to locations coorispoinding to the compositions and returning the example XRD measurements. 
+        
+    """
+    
+
+    # Location for XRD measurements file (tab delimited .txt)
+    wafer_xrd_file: Optional[Path] = None
+    diffraction_space_name: Optional[str] = "Q-space"
+    diffraction_space_bins: Optional[int] = None
+
+    xrd_measurements: Optional[Union[pd.DataFrame, np.ndarray]] = field(
+        init=False, default=None
+    )  # TODO: behavior of this when sim
+
+
+    def load_sim_data(self):
+        self.xrd_measurements = None
+        if self.diffraction_space_bins is not None:
+            self.xrd_measurements = np.array([]).reshape(
+                -1, self.diffraction_space_bins
+            )
+        self.xrd_measurements = pd.read_table(
+            self.wafer_directory.joinpath(self.wafer_xrd_file)
+        )
+
+    def simulated_move_and_measure(self, compositions_locations):
+        """Move (in composition-space) to new locations
+        and return the XRD measurements."""
+
+        # # If the data for simulation mode hasn't been loaded, load it.
+        # if not self.xy_locations:
+        #     self.load_sim_data()
+
+        _check_attr(self, "compositions")
+        _check_attr(self, "xrd_measurements")
+        indexes = []
+        for comp in compositions_locations:
+            index = self.compositions[self.compositions.to_numpy() == comp].index[0]
+            indexes.append(index)
+
+        measurements = self.xrd_measurements.iloc[indexes, :].to_numpy()
+        return measurements
+
+    @property
+    def sim_two_theta_space(self):
+        """Get the 2Theta values of the XRD measurements in degrees"""
+        _check_attr(self, "xrd_measurements")
+        two_theta = self.xrd_measurements.columns.to_numpy().astype(float)
+        return two_theta
+

@@ -11,7 +11,7 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 from hermes.utils import _check_attr
 
 from . import PySpecClient
-from ._instruments import PowderDiffractometer
+from ._instruments import DiffractometerForCombi
 
 logger = logging.getLogger("hermes")
 try:
@@ -38,7 +38,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
 
 @typesafedataclass(config=_Config)
-class CHESSQM2Beamline(PowderDiffractometer):
+class CHESSQM2Beamline(DiffractometerForCombi):
     """Class for the QM2 diffractometer at CHESS
     
     Attributes
