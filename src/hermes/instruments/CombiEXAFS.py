@@ -45,15 +45,16 @@ class CombiEXAFS(CombiPointByPoint):
         and acquire XRD measurement there. 
     """   
 
-    # Location for XRD measurements file (tab delimited .txt)
-    wafer_xrd_file: Optional[Path] = None
-    diffraction_space_name: Optional[str] = "Q-space"
-    diffraction_space_bins: Optional[int] = None
+    # Location for measurements file 
+    wafer_xrd_file: Optional[Path] = None #TODO change for EXAFS
+    absorber: Optional[np.ndarray] = None
+    R_bins: Optional[np.ndarray] = None
+    complex_component: Optional[list] = ["real", "imaginary"]
 
     xrd_measurements: Optional[Union[pd.DataFrame, np.ndarray]] = field(
         init=False, default=None
     )  # TODO: behavior of this when sim
-    
+
     def load_sim_data(self):
         self.xrd_measurements = None
         if self.diffraction_space_bins is not None:
@@ -166,8 +167,9 @@ class EXAFSBeamline(CombiEXAFS):
         else:
             
             #Start a container for the measurements
-            measurements = np.array([]).reshape(-1, self.diffraction_space_bins)
-            
+            # with shape [samples, absorber, R, complex_component]
+            measurements = np.array([]).reshape(-1, self.absorber, self.R_bins, 2)
+
             # For each location:
             for idx, row in self.xy_locations.loc[indexes].iterrows():
 
@@ -175,7 +177,7 @@ class EXAFSBeamline(CombiEXAFS):
                 # measurement = Do some thing!!!
 
                 measurements = np.concatenate(
-                    (measurements, np.array(measurement).reshape(1, -1)), axis=0
+                    (measurements, np.array(measurement).reshape(1, self.absorber, self.R_bins, 2)), axis=0
                 )
 
         return measurements
