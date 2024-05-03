@@ -18,15 +18,15 @@ warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
 logger = logging.getLogger("hermes")
 
-GPC_INSTALLED = False
 try:
     import gpflow
 
     from .heteroscedastic_gpc import HeteroscedasticMultiClass, HeteroscedasticRobustMax
-except ModuleNotFoundError:
-    logger.warning("GPFlow is not installed.")
-else:
+
     GPC_INSTALLED = True
+except ModuleNotFoundError:
+    # logger.warning("GPFlow is not installed.")
+    GPC_INSTALLED = False
 
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))

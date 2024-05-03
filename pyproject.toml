@@ -37,11 +37,13 @@ gp = [
 ]
 joint = [
   "dill",
-  "gpjax",
   "jax",
+  "gpjax",
   "torch",
+  "pyro-ppl",
   "numpyro",
   "scipy",
+  "tensorflow-probability==0.22.0",
 ]
 powder-diffractometers = [
   "pyfai>=2023.5.0",

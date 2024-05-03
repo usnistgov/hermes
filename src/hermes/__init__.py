@@ -6,6 +6,7 @@
 # For data analysis tasks
 # For comparison measures
 # For archiving results
+import hermes.MLTasks.acquisition as acquisition
 from hermes.bailiwick import PhaseID, SpectralProbability
 from hermes.MLTasks import (
     acquisition,

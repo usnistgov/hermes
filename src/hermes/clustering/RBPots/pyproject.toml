@@ -1,0 +1,16 @@
+[tool.poetry]
+authors = ["Austin McDannald <austin.mcdannald@nist.gov>"]
+description = "This is a method for community discovery clustering."
+name = "rbpots"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+cdlib = "^0.3.0"
+leidenalg = "^0.10.2"
+networkx = "^3.3"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
