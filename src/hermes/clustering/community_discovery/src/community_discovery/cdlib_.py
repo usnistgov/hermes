@@ -1,4 +1,4 @@
-"""RBPots algorithm."""
+"""Cdlib algorithms."""
 
 import networkx as nx  # type: ignore
 import numpy as np
@@ -8,7 +8,7 @@ with suppress_stdout():
     from cdlib import algorithms  # type: ignore
 
 
-def cluster(G, res):
+def rbpots(G, res):
     """Cluster the graph using the RB Pots algorithm.
     G is a networkx graph object
     res is a tunable parameter float for the resolution"""

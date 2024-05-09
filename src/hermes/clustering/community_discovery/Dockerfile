@@ -9,7 +9,8 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install grpcio grpcio-tools networkx cdlib leidenalg
-COPY . /opt/RBPots
-RUN pip install /opt/RBPots
+COPY . /opt/community_discovery
+RUN ls /opt/community_discovery
+RUN pip install /opt/community_discovery
 
-ENTRYPOINT ["python3", "/opt/RBPots/protobuf/server.py"]
+ENTRYPOINT ["python3", "/opt/cd/protobuf/server.py"]

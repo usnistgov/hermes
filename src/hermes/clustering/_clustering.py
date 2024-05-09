@@ -5,29 +5,30 @@ Created on Tue Sep 27 11:57:27 2022
 
 @author: Austin McDannald
 """
+import json
 import logging
 from dataclasses import field
+from pathlib import Path
 from typing import Any, Optional
 
+import grpc
 import networkx as nx  # type: ignore
 import numpy as np
 from pydantic.dataclasses import dataclass as typesafedataclass
+from python_on_whales import docker
 from scipy.spatial import Delaunay  # type: ignore
 from sklearn.cluster import SpectralClustering  # type: ignore
 
 from hermes._base import Analysis
-from hermes.MLTasks.distance import BaseDistance, EuclideanDistance
-from hermes.MLTasks.similarity import BaseSimilarity, SquaredExponential
+
+# from hermes.clustering.protobuf import rbpots_pb2, rbpots_pb2_grpc
+from hermes.distance import BaseDistance, EuclideanDistance
+from hermes.similarity import BaseSimilarity, SquaredExponential
 from hermes.utils import _check_attr, _default_ndarray
 
-logger = logging.getLogger("hermes")
-try:
-    from cdlib.utils import suppress_stdout
+from . import rbpots_pb2, rbpots_pb2_grpc
 
-    with suppress_stdout():
-        from cdlib import algorithms  # type: ignore
-except ModuleNotFoundError:
-    logger.warning("No CDLIB found")
+logger = logging.getLogger("hermes")
 
 
 class UnspecifiedType(Exception):
@@ -116,11 +117,11 @@ class Cluster(Analysis):
 
     measurements: np.ndarray
 
-    measurements_distance_type: BaseDistance = (
-        EuclideanDistance()
+    measurements_distance_type: BaseDistance = field(
+        default_factory=EuclideanDistance
     )  # field(init=True, default_factory=EuclideanDistance())#
-    measurements_similarity_type: BaseSimilarity = (
-        SquaredExponential()
+    measurements_similarity_type: BaseSimilarity = field(
+        default_factory=SquaredExponential
     )  # field(init=True, default_factory=SquaredExponential())
     measurements_distance: np.ndarray = field(
         init=False,
@@ -133,10 +134,12 @@ class Cluster(Analysis):
     )
 
     locations: np.ndarray = field(default_factory=_default_ndarray)
-    locations_distance_type: BaseDistance = (
-        EuclideanDistance()
+    locations_distance_type: BaseDistance = field(
+        default_factory=EuclideanDistance
     )  # field(init=False, default_factory = EuclideanDistance())
-    locations_similarity_type: BaseSimilarity = SquaredExponential()
+    locations_similarity_type: BaseSimilarity = field(
+        default_factory=SquaredExponential
+    )
     # field(init=False, default_factory= SquaredExponential())#
     locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(
@@ -498,20 +501,50 @@ class RBPots(ContiguousCommunityDiscovery):
 
     resolution: float = 0.2
 
+    def build_image(self):
+        docker_dir = Path(__file__).with_name("community_discovery").absolute()
+        docker.build(docker_dir, tags="cd1")
+
+    def __post_init__(self):
+        docker_images = [x.repo_tags for x in docker.image.list()]
+        if not ["cd1"] in docker_images:
+            self.build_image()
+        docker.run("cd1", detach=True, publish=["50051:50051"])
+
     def cluster(self):
         """Cluster the graph using the RB Pots algorithm."""
         G = self.graph
-        res = self.resolution
+        # res = self.resolution
         # Cluster with RB Pots Algorithm
-        clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
+        # clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
 
-        # Label the graph with the clusters
-        for i, k in enumerate(clusters.communities):
-            for q in k:
-                nx.set_node_attributes(G, {q: i}, name="Labels")
-        # Extract the labels
-        self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
-        self.get_local_membership_prob()
+        # # Label the graph with the clusters
+        # for i, k in enumerate(clusters.communities):
+        #     for q in k:
+        #         nx.set_node_attributes(G, {q: i}, name="Labels")
+        # # Extract the labels
+
+        # G = nx.fast_gnp_random_graph(10, 0.5, 42, False)
+
+        # for u, v in G.edges():
+        #     G.edges[u, v]["Weight"] = random.randint(0, 10)
+
+        # resolution = 4.4
+
+        channel = grpc.insecure_channel("localhost:50051")
+        stub = rbpots_pb2_grpc.ClusteringStub(channel)
+        graph_json = json.dumps(nx.node_link_data(G))
+        graph_to_send = rbpots_pb2.IncomingGraphandResolution(
+            data=graph_json, res=self.resolution
+        )
+
+        response = stub.SendAndModifyGraph(graph_to_send)
+
+        G = nx.readwrite.json_graph.node_link_graph(json.loads(response.data))
+        labels = np.array(response.labels)
+        self.labels = labels
+        # self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+        # self.get_local_membership_prob()
 
 
 @typesafedataclass(config=_Config)
