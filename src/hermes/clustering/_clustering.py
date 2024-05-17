@@ -509,7 +509,9 @@ class RBPots(ContiguousCommunityDiscovery):
         docker_images = [x.repo_tags for x in docker.image.list()]
         if not ["cd1"] in docker_images:
             self.build_image()
-        docker.run("cd1", detach=True, publish=["50051:50051"])
+            docker.run("cd1", detach=True, publish=[("50051", "50051")])
+        else:
+            docker.start("cd1")
 
     def cluster(self):
         """Cluster the graph using the RB Pots algorithm."""
