@@ -17,21 +17,17 @@ import time
 from dataclasses import field
 from typing import Any, Optional, Union
 
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax import config
-    from jax.lax import dynamic_slice
-except BaseException as e:
-    raise e
-
 import gpjax as gpx
+import jax
+import jax.numpy as jnp
 import numpy as np
 import numpyro
 import numpyro.distributions as ndist
 import pyro
 import pyro.distributions as dist
 import torch
+from jax import config
+from jax.lax import dynamic_slice
 from numpyro import handlers
 from numpyro.infer import MCMC as nMCMC
 from numpyro.infer import NUTS as nNUTS

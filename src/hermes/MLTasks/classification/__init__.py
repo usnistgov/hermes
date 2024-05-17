@@ -2,25 +2,24 @@
 
 import logging
 
-from ._classification import GPC_INSTALLED, Classification
+from ._classification import Classification
 from .predict_saved import SavedModel
 
-if GPC_INSTALLED:
+GPC_INSTALLED = False
+
+logger = logging.getLogger("hermes")
+try:
     from ._classification import (
+        GPC_INSTALLED,
         HeteroscedasticGPC,
         HomoscedasticGPC,
         SparceHeteroscedasticGPC,
         SparceHomoscedasticGPC,
     )
-
-
-logger = logging.getLogger("hermes")
-# try:
-
-# except ImportError:
-#     logger.warning("GPFlow not installed, GPC classifiers will not be available.")
-# else:
-#     GPC_INSTALLED = True
+except ImportError:
+    logger.warning("GPFlow not installed, GPC classifiers will not be available.")
+else:
+    GPC_INSTALLED = True
 
 if GPC_INSTALLED:
     __all__ = [

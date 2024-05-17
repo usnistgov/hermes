@@ -5,30 +5,26 @@ Created on Tue Sep 27 11:57:27 2022
 
 @author: Austin McDannald
 """
-import json
 import logging
 from dataclasses import field
-from pathlib import Path
 from typing import Any, Optional
 
-import grpc
 import networkx as nx  # type: ignore
 import numpy as np
 from pydantic.dataclasses import dataclass as typesafedataclass
-from python_on_whales import docker
 from scipy.spatial import Delaunay  # type: ignore
 from sklearn.cluster import SpectralClustering  # type: ignore
 
 from hermes._base import Analysis
-
-# from hermes.clustering.protobuf import rbpots_pb2, rbpots_pb2_grpc
-from hermes.distance import BaseDistance, EuclideanDistance
-from hermes.similarity import BaseSimilarity, SquaredExponential
+from hermes.MLTasks.distance import BaseDistance, EuclideanDistance
+from hermes.MLTasks.similarity import BaseSimilarity, SquaredExponential
 from hermes.utils import _check_attr, _default_ndarray
 
-from . import rbpots_pb2, rbpots_pb2_grpc
-
 logger = logging.getLogger("hermes")
+try:
+    from cdlib import algorithms  # type: ignore
+except ModuleNotFoundError:
+    logger.warning("No CDLIB found")
 
 
 class UnspecifiedType(Exception):
@@ -54,58 +50,58 @@ class Cluster(Analysis):
     """Class for clustering algorithms.
     Clustering Algorithms take in an array of measurements and (optionally) thier locations,
     and return a label for each based on their similarities or distances.
-
+    
     Attributes
     ----------
     measurements: np.ndarray
         Array of all the measurements in shape N x D for N measurements of dimension D.
-
+    
     measurements_distance_type: BaseDistance = (EuclideanDistance())
-        Metric used to discribe the distance between measurements.
+        Metric used to discribe the distance between measurements. 
         Default is Euclidean Distance.
-
+    
     measurements_similarity_type: BaseSimilarity = (SquaredExponential())
-        Metric used to discribe the similarities of measurements.
+        Metric used to discribe the similarities of measurements. 
         Default is SquaredExponential
             similarity = exp(-1 * distance**2)
-
+    
     measurements_distance: np.ndarray
-        Array of pairwise distances between each measurement
+        Array of pairwise distances between each measurement 
         as claculated by measurements_distance_type.
-        Shape should be N x N for N measurements.
-
+        Shape should be N x N for N measurements. 
+    
     measurements_similarity: np.ndarray
-        Array of pairwise similarities between each measurement
+        Array of pairwise similarities between each measurement 
         as claculated by measurements_similarity_type.
-        Shape should be N x N for N measurements.
-
-    locations : np.ndarray
+        Shape should be N x N for N measurements. 
+    
+    locations : np.ndarray 
         Array of all the locations of each measurement in shape N x L for N measurements at locations discribed by L dimensions.
-
+    
     locations_distance_type : BaseDistance = (EuclideanDistance())
-        Metric used to discribe the distance between locations of the measurements.
+        Metric used to discribe the distance between locations of the measurements. 
         Default is Euclidean Distance.
-
+    
     locations_similarity_type: BaseSimilarity = SquaredExponential()
-        Metric used to discribe the similarities of locations of the measurements.
+        Metric used to discribe the similarities of locations of the measurements. 
         Default is SquaredExponential
             similarity = exp(-1 * distance**2)
-
-    locations_distance: np.ndarray
-        Array of pairwise distances between each location of each measurement
+    
+    locations_distance: np.ndarray 
+        Array of pairwise distances between each location of each measurement 
         as claculated by locations_distance_type.
-        Shape should be N x N for N measurements.
-
+        Shape should be N x N for N measurements. 
+    
     locations_similarity: np.ndarray
-        Array of pairwise similarities between each location of each measurement
+        Array of pairwise similarities between each location of each measurement 
         as claculated by locations_similarity_type.
-        Shape should be N x N for N measurements.
-
-    labels: np.ndarray
+        Shape should be N x N for N measurements. 
+    
+    labels: np.ndarray 
         Array of the cluster labels of each measurement.
 
     probabilities: np.ndarray
-        Array of the membership probaiblity of each measurement to each cluster.
+        Array of the membership probaiblity of each measurement to each cluster. 
 
     Methods
     -------
@@ -113,15 +109,15 @@ class Cluster(Analysis):
         Calculates the membership probability of each measurement to each cluster.
         Shape should be N x C for N measurements and C clusters.
         Membership probability is forced to sum to unity (100%) across the clusters for each measurment (rows sum to 1).
-        Note: can only be called after cluster labels are calculated."""
+        Note: can only be called after cluster labels are calculated. """
 
     measurements: np.ndarray
 
-    measurements_distance_type: BaseDistance = field(
-        default_factory=EuclideanDistance
+    measurements_distance_type: BaseDistance = (
+        EuclideanDistance()
     )  # field(init=True, default_factory=EuclideanDistance())#
-    measurements_similarity_type: BaseSimilarity = field(
-        default_factory=SquaredExponential
+    measurements_similarity_type: BaseSimilarity = (
+        SquaredExponential()
     )  # field(init=True, default_factory=SquaredExponential())
     measurements_distance: np.ndarray = field(
         init=False,
@@ -134,12 +130,10 @@ class Cluster(Analysis):
     )
 
     locations: np.ndarray = field(default_factory=_default_ndarray)
-    locations_distance_type: BaseDistance = field(
-        default_factory=EuclideanDistance
+    locations_distance_type: BaseDistance = (
+        EuclideanDistance()
     )  # field(init=False, default_factory = EuclideanDistance())
-    locations_similarity_type: BaseSimilarity = field(
-        default_factory=SquaredExponential
-    )
+    locations_similarity_type: BaseSimilarity = SquaredExponential()
     # field(init=False, default_factory= SquaredExponential())#
     locations_distance: np.ndarray = field(init=False, default_factory=_default_ndarray)
     locations_similarity: np.ndarray = field(
@@ -208,12 +202,12 @@ class Cluster(Analysis):
 
     def get_global_membership_prob(self, v: float = 1.0, exclude_self: bool = False):
         """Get the probability of each measurement beloning to each cluster.
-
+        
         Parameters
         ----------
         v : float
             parameter that adjusts the strentgh of the partitioning with the similarities
-        exlude_self : bool
+        exlude_self : bool 
             flag to consider a data point's self-similarity in the calculation of similarity to the cluster it belongs to.
 
         """
@@ -277,16 +271,16 @@ class ContiguousCluster(Cluster):
     Locations of measurements are used to form a graph with a Delauny Triangulation.
     The similarities of those measureements are used as wieghts for the edges of that graph.
     The graph is partitioned to form the clusters.
-    Partitioning a Delauny Triangulation ensures that the patitions (clusters) are contiguous within the location space.
+    Partitioning a Delauny Triangulation ensures that the patitions (clusters) are contiguous within the location space. 
 
-
+    
     Methods
     -------
     form_graph(self)
         Uses the locations of the measurements (in 2D or 3D) to form an adjacency graph using a Delauny Triangulation.
 
     get_local_membership_prob(self, v: float = 1.0)
-        Determines the membership probabilities of each measurement to each of the clusters of its nieghbors in the graph.
+        Determines the membership probabilities of each measurement to each of the clusters of its nieghbors in the graph. 
     """
 
     graph: Optional[nx.Graph] = field(init=False, default=None)
@@ -448,7 +442,7 @@ class ContiguousCluster(Cluster):
 @typesafedataclass(config=_Config)
 class ContiguousFixedKClustering(ContiguousCluster):
     """Use these algorithms when the number of clusters is known.
-
+    
     Parameters
     ----------
     K : int
@@ -467,7 +461,7 @@ class ContiguousFixedKClustering(ContiguousCluster):
 
 @typesafedataclass(config=_Config)
 class Spectral(ContiguousFixedKClustering):
-    """Spectral Clustering using the graph formed by the Contiguous parent class
+    """Spectral Clustering using the graph formed by the Contiguous parent class 
     to enforce the contigous constraint."""
 
     def cluster(self, n_clusters: int, **kwargs):
@@ -492,7 +486,7 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 @typesafedataclass(config=_Config)
 class RBPots(ContiguousCommunityDiscovery):
     """RBPots algorithm on the graph formed from the Contiguous parent class.
-
+    
     Paremeters
     ----------
     resolution : float
@@ -501,71 +495,38 @@ class RBPots(ContiguousCommunityDiscovery):
 
     resolution: float = 0.2
 
-    def build_image(self):
-        docker_dir = Path(__file__).with_name("community_discovery").absolute()
-        docker.build(docker_dir, tags="cd1")
-
-    def __post_init__(self):
-        docker_images = [x.repo_tags for x in docker.image.list()]
-        if not ["cd1"] in docker_images:
-            self.build_image()
-            docker.run("cd1", detach=True, publish=[("50051", "50051")])
-        else:
-            docker.start("cd1")
-
     def cluster(self):
         """Cluster the graph using the RB Pots algorithm."""
         G = self.graph
-        # res = self.resolution
+        res = self.resolution
         # Cluster with RB Pots Algorithm
-        # clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
+        clusters = algorithms.rb_pots(G, weights="Weight", resolution_parameter=res)
 
-        # # Label the graph with the clusters
-        # for i, k in enumerate(clusters.communities):
-        #     for q in k:
-        #         nx.set_node_attributes(G, {q: i}, name="Labels")
-        # # Extract the labels
-
-        # G = nx.fast_gnp_random_graph(10, 0.5, 42, False)
-
-        # for u, v in G.edges():
-        #     G.edges[u, v]["Weight"] = random.randint(0, 10)
-
-        # resolution = 4.4
-
-        channel = grpc.insecure_channel("localhost:50051")
-        stub = rbpots_pb2_grpc.ClusteringStub(channel)
-        graph_json = json.dumps(nx.node_link_data(G))
-        graph_to_send = rbpots_pb2.IncomingGraphandResolution(
-            data=graph_json, res=self.resolution
-        )
-
-        response = stub.SendAndModifyGraph(graph_to_send)
-
-        G = nx.readwrite.json_graph.node_link_graph(json.loads(response.data))
-        labels = np.array(response.labels)
-        self.labels = labels
-        # self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
-        # self.get_local_membership_prob()
+        # Label the graph with the clusters
+        for i, k in enumerate(clusters.communities):
+            for q in k:
+                nx.set_node_attributes(G, {q: i}, name="Labels")
+        # Extract the labels
+        self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
+        self.get_local_membership_prob()
 
 
 @typesafedataclass(config=_Config)
 class IteritativeFixedK(ContiguousCommunityDiscovery):
     """Call a fixed k clustering method iteratively
     using the Gap Statisic method to choose K.
-
+    
     Parameters
     ----------
     min_K : int
         Smallest number of clusters to consider.
-
+    
     mak_K : int
         Largest number of clusters to consider.
-
+        
     """
-
-    # TODO:  Write Gap_Statistic function
-
+# TODO:  Write Gap_Statistic function
+    
     # method: ContiguousFixedKClustering
     min_K: int = 1
     max_K: int = 10

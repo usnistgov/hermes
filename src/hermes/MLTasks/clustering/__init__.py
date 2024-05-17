@@ -3,8 +3,8 @@
 from ._clustering import (
     Cluster,
     ContiguousCluster,
-    ContiguousCommunityDiscovery,
     ContiguousFixedKClustering,
+    ContiguousCommunityDiscovery,
     RBPots,
 )
 
