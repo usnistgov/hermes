@@ -1,15 +1,17 @@
 """Classes of Acquisition Functions"""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import tensorflow as tf
+from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 from scipy.special import erf
 
 
-@dataclass
+@dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Acquisition:
     """Base level class for acquisiton functions"""
 
