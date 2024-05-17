@@ -7,6 +7,7 @@ Created on Tue Sep 27 11:57:27 2022
 """
 import json
 import logging
+import sys
 from dataclasses import field
 from pathlib import Path
 from typing import Any, Optional
@@ -20,13 +21,15 @@ from scipy.spatial import Delaunay  # type: ignore
 from sklearn.cluster import SpectralClustering  # type: ignore
 
 from hermes._base import Analysis
+from hermes.clustering.community_discovery.protobuf import rbpots_pb2
+from hermes.clustering.community_discovery.protobuf import (
+    rbpots_pb2_grpc_local as rbpots_pb2_grpc,
+)
 
 # from hermes.clustering.protobuf import rbpots_pb2, rbpots_pb2_grpc
 from hermes.distance import BaseDistance, EuclideanDistance
 from hermes.similarity import BaseSimilarity, SquaredExponential
 from hermes.utils import _check_attr, _default_ndarray
-
-from . import rbpots_pb2, rbpots_pb2_grpc
 
 logger = logging.getLogger("hermes")
 
@@ -502,16 +505,26 @@ class RBPots(ContiguousCommunityDiscovery):
     resolution: float = 0.2
 
     def build_image(self):
-        docker_dir = Path(__file__).with_name("community_discovery").absolute()
-        docker.build(docker_dir, tags="cd1")
+        self.docker_dir = Path(__file__).with_name("community_discovery").absolute()
+        docker.build(self.docker_dir, tags="cd1")
+        docker.run("cd1", detach=True, publish=[("50051", "50051")], name="cd")
+        self.docker_container_name = "cd"
+        self.docker_image_name = "cd1"
 
     def __post_init__(self):
         docker_images = [x.repo_tags for x in docker.image.list()]
-        if not ["cd1"] in docker_images:
+        if not ["cd1:latest"] in docker_images:
             self.build_image()
-            docker.run("cd1", detach=True, publish=[("50051", "50051")])
-        else:
+        if not docker.container.inspect("cd").state.running:
             docker.start("cd1")
+
+        super().__post_init__()
+
+    def rebuild_docker(self):
+        docker.stop("cd")
+        docker.image.remove("cd1", force=True)
+        docker.remove("cd", force=True)
+        self.build_image()
 
     def cluster(self):
         """Cluster the graph using the RB Pots algorithm."""
@@ -535,12 +548,14 @@ class RBPots(ContiguousCommunityDiscovery):
 
         channel = grpc.insecure_channel("localhost:50051")
         stub = rbpots_pb2_grpc.ClusteringStub(channel)
-        graph_json = json.dumps(nx.node_link_data(G))
+        graph_json = json.dumps(nx.node_link_data(G), default=int)
         graph_to_send = rbpots_pb2.IncomingGraphandResolution(
             data=graph_json, res=self.resolution
         )
+        self.graph_to_send = graph_to_send
 
         response = stub.SendAndModifyGraph(graph_to_send)
+        self.response = response
 
         G = nx.readwrite.json_graph.node_link_graph(json.loads(response.data))
         labels = np.array(response.labels)

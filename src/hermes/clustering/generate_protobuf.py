@@ -2,6 +2,7 @@
 
 # pylint: disable=W1203
 import logging
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -70,6 +71,30 @@ def main(
         f"{docker_dir}/protobuf/{name}_pb2_grpc.py",
     )
     logger.info(f"Copied {name}_pb2_grpc.py to {docker_dir}/protobuf.")
+
+    # make two copies of _pb2_grpc.py: local and docker
+    # local will have `from . import rbpots_pb2 as rbpots__pb2`
+    # docker will have `import rbpots_pb2 as rbpots__pb2`
+    # edit _pb2_grpc
+    shutil.copy(
+        f"{docker_dir}/protobuf/{name}_pb2_grpc.py",
+        f"{docker_dir}/protobuf/{name}_pb2_grpc_local.py",
+    )
+    with open(
+        f"{docker_dir}/protobuf/{name}_pb2_grpc_local.py", "r", encoding="utf-8"
+    ) as file:
+        data = file.readlines()
+        for k, v in enumerate(data):
+            if bool(re.match(r"import \w+_pb2 as \w+__pb2", v)):
+                data[k] = f"from . import {name}_pb2 as {name}__pb2\n"
+
+    # write to _pb2_grpc_local.py
+    with open(
+        f"{docker_dir}/protobuf/{name}_pb2_grpc_local.py", "w", encoding="utf-8"
+    ) as file:
+        file.writelines(data)
+
+    logger.info("Modified _pb2_grpc_local.py for local use.")
 
 
 if __name__ == "__main__":

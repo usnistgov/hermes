@@ -7,8 +7,6 @@ from hermes.utils.remap import rescale_2d_data_linear
 
 __all__ = [
     "rescale_2d_data_linear",
-    "rbpots_pb2",
-    "rbpots_pb2_grpc",
     "_default_ndarray",
     "find_new_locations",
     "_check_attr",

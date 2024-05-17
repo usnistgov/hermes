@@ -5,7 +5,7 @@ import grpc
 import networkx as nx
 import rbpots_pb2
 import rbpots_pb2_grpc
-from rbpots import cluster
+from community_discovery import rbpots
 
 
 class ClusteringServicer(rbpots_pb2_grpc.ClusteringServicer):
@@ -14,7 +14,7 @@ class ClusteringServicer(rbpots_pb2_grpc.ClusteringServicer):
         graph_data = json.loads(request.data)
         G = nx.readwrite.json_graph.node_link_graph(graph_data)
         resolution = request.res
-        labels, G = cluster(G, resolution)
+        labels, G = rbpots(G, resolution)
 
         # Serialize the graph back to JSON to return
         modified_graph_json = json.dumps(nx.node_link_data(G))

@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import rbpots_pb2 as rbpots__pb2
+from . import rbpots_pb2 as rbpots__pb2
 
 GRPC_GENERATED_VERSION = '1.63.0'
 GRPC_VERSION = grpc.__version__

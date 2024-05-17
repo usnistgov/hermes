@@ -6,7 +6,6 @@
 # For data analysis tasks
 # For comparison measures
 # For archiving results
-import hermes.acquisition as acquisition
 from hermes import acquisition, classification, clustering, distance, similarity
 from hermes.bailiwick import PhaseID, SpectralProbability
 
