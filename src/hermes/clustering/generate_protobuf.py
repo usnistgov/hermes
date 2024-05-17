@@ -1,4 +1,9 @@
 """Script to generate protobuffer files."""
+"""After we have the protobuf file created, then we run this script to generate
+the *pb2.py and pb2_grpc.py files. 
+We provide this script with the name of the .proto file and the docker directory for the algorithm.
+It assumes you're working in the same directory as the .proto file.
+It makes a copy of the *pb2.py files in this directory and a copy in the docker directory for the algorithm."""
 
 # pylint: disable=W1203
 import logging

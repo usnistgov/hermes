@@ -35,6 +35,11 @@ The script will:
 Use `src/hermes/clustering/community_discovery/Dockerfile` as reference.
 
 Modify directory names (`*/commmunity_discovery`) as needed.
+Also need to modfiy the host.py and server.py files 
+host.py is only for testing within host machine - it calls the docker.
+server.py is what runs the docker. 
+Both of these will need the updated directory and python script names. 
+
 
 I am installing a lot of things here
 ```
@@ -48,6 +53,11 @@ RUN apt update && \
 ```
 It could be that not all of these things are necessary and choosing more carefully what to install could decrease the installation time and size of containers.
 
+Once we have mulitple docker containers running at the same time, we'll need to handle the port assignment - so that multiple dockers don't get assigned the same port (all of which are hardcoded to 50051 at the moment, line 29 in server.py)
+
+
 ### Building Containers
 
 Python-on-whales takes care of building containers, running containers (first time after building), and starting containers (after running for first time).
+
+Docker.run() does the configuration.
