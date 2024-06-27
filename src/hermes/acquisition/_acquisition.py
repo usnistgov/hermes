@@ -10,6 +10,7 @@ from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 from scipy.special import erf
 
+from hermes.distance import BaseDistance
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Acquisition:
@@ -19,7 +20,7 @@ class Acquisition:
     mean: np.ndarray
     var: np.ndarray
 
-
+   
 @dataclass
 class Random(Acquisition):
     def calculate(self):
@@ -28,6 +29,19 @@ class Random(Acquisition):
         next_loc = self.unmeasured_locations[next]
         return next_loc
 
+@dataclass
+class FurthestPoint(Acquisition):
+    """Just find the furthest point from the measured locations"""
+    measured_locations: np.ndarray
+    distance_metric: BaseDistance
+
+    def calculate(self):
+        distancetable = self.distance_metric.calculate(self.measured_locations, 
+                                                       self.unmeasured_locations)
+
+        next_loc = self.unmeasured_locations[np.argmax(distance_table.sum(axis=0)),:]
+        return next_loc
+ 
 
 @dataclass
 class PureExploit(Acquisition):
