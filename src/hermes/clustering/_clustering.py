@@ -270,10 +270,10 @@ class GaussianMixtureModel(Cluster):
         """Gaussian Mixture Model in location space"""
 
         clusters = GaussianMixture(n_clusters, **kwargs).fit(
-            self.locations
+            self.measurements
         )
-        labels = clusters.predict(self.locations)
-        self.probabilities = clusters.predict_proba(self.locations)
+        labels = clusters.predict(self.measurements)
+        self.probabilities = clusters.predict_proba(self.measurements)
         return labels
 
 @typesafedataclass(config=_Config)
@@ -284,10 +284,10 @@ class BayesianGaussianMixtureModel(Cluster):
         """Gaussian Mixture Model in location space"""
 
         clusters = BayesianGaussianMixture(n_clusters, **kwargs).fit(
-            self.locations
+            self.measurements
         )
-        labels = clusters.predict(self.locations)
-        self.probabilities = clusters.predict_proba(self.locations)
+        labels = clusters.predict(self.measurements)
+        self.probabilities = clusters.predict_proba(self.measurements)
         return labels
 
 @typesafedataclass(config=_Config)
