@@ -19,6 +19,8 @@ from pydantic.dataclasses import dataclass as typesafedataclass
 from python_on_whales import docker
 from scipy.spatial import Delaunay  # type: ignore
 from sklearn.cluster import SpectralClustering  # type: ignore
+from sklearn.mixture import GaussianMixture  # type: ignore
+from sklearn.mixture import BayesianGaussianMixture  # type: ignore
 
 from hermes._base import Analysis
 from hermes.clustering.community_discovery.protobuf import rbpots_pb2
@@ -260,18 +262,34 @@ class Cluster(Analysis):
         self.probabilities = probabilities
 
 
-# locations = np.array([[3, 4], [1, 2]])
-# measurements = np.array([2, 8])
+@typesafedataclass(config=_Config)
+class GaussianMixtureModel(Cluster):
+    """Treat the density of datapoints as generated from Gaussian Distributions"""
 
-# distance = EuclideanDistance()
+    def cluster(self, n_clusters: int, **kwargs):
+        """Gaussian Mixture Model in location space"""
 
+        clusters = GaussianMixture(n_clusters, **kwargs).fit(
+            self.locations
+        )
+        labels = clusters.predict(self.locations)
+        self.probabilities = clusters.predict_proba(self.locations)
+        return labels
 
-# c = Cluster(
-#     locations=locations,
-#     locations_distance_type=distance,
-#     measurements=measurements,
-#     measurements_distance_type=distance,
-# )
+@typesafedataclass(config=_Config)
+class BayesianGaussianMixtureModel(Cluster):
+    """Treat the density of datapoints as generated from Gaussian Distributions"""
+
+    def cluster(self, n_clusters: int, **kwargs):
+        """Gaussian Mixture Model in location space"""
+
+        clusters = BayesianGaussianMixture(n_clusters, **kwargs).fit(
+            self.locations
+        )
+        labels = clusters.predict(self.locations)
+        self.probabilities = clusters.predict_proba(self.locations)
+        return labels
+
 @typesafedataclass(config=_Config)
 class ContiguousCluster(Cluster):
     """Use this algorthim to cluster data in domains with a contigious constraint.
