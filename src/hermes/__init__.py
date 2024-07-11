@@ -6,8 +6,8 @@
 # For data analysis tasks
 # For comparison measures
 # For archiving results
+from hermes import acquisition, classification, clustering, distance, similarity
 from hermes.bailiwick import PhaseID, SpectralProbability
-from hermes.MLTasks import acquisition, classification, clustering, distance, similarity
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
@@ -21,6 +21,7 @@ __all__ = [
     "classification",
     "acquisition",
     "instruments",
+    # "joint",
     "pipelines",
     "PhaseID",
     "SpectralProbability",

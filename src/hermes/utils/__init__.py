@@ -1,4 +1,5 @@
 """Utils for hermes."""
+
 from hermes.utils._utils import _check_attr
 from hermes.utils._utils import default_ndarray as _default_ndarray
 from hermes.utils._utils import find_new_locations

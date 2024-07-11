@@ -7,9 +7,9 @@ from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
 from hermes.archive import Archiver
+from hermes.classification import Classification as ClassificationMethod
+from hermes.clustering import Cluster as ClusterMethod
 from hermes.instruments import Instrument
-from hermes.MLTasks.classification import Classification as ClassificationMethod
-from hermes.MLTasks.clustering import Cluster as ClusterMethod
 
 # Pipeline = ForwardRef("Pipeline")
 # Convergence = ForwardRef("Convergence")

@@ -1,0 +1,52 @@
+[project]
+authors = [
+  {name = "Austin McDannald", email = "austin.mcdannald@nist.gov"},
+  {name = "Zach Trautt", email = "zachary.trautt@nist.gov"},
+  {name = "Camilo Velez", email = "camilo.velezramirez@nist.gov"},
+  {name = "Brian DeCost", email = "brian.decost@nist.gov"},
+  {name = "Gilad Kusne", email = "aaron.kusne@nist.gov"},
+  {name = "Howie Joress", email = "howie.joress@nist.gov"},
+]
+dependencies = [
+  "grpcio>=1.63.0",
+  "matplotlib>=3.7.1",
+  "networkx>=3.1",
+  "numpy>=1.22.1",
+  "pandas>=1.4.0",
+  "pydantic>=2.0.0",
+  "python-on-whales>=0.71.0",
+  "scikit-learn>=1.2.2",
+  "tensorflow>=2.10",
+  "typer>=0.12.3",
+]
+description = "Flexible materials modeling and lab automation"
+name = "hermes"
+requires-python = "<3.12, >=3.8"
+version = "0.1.0"
+
+[project.optional-dependencies]
+all = ["hermes[chess, clustering, gp, joint, powder-diffractometers]"]
+chess = [
+  "hermes[powder-diffractometers]",
+  "certif-pyspec>=1.5.3",
+]
+clustering = [
+  "cdlib>=0.2.6",
+  "leidenalg>=0.10.1",
+]
+gp = [
+  "gpflow>=2.7.1",
+]
+joint = [
+  "dill",
+  "jax",
+  "gpjax",
+  "torch",
+  "pyro-ppl",
+  "numpyro",
+  "scipy",
+  "tensorflow-probability==0.22.0",
+]
+powder-diffractometers = [
+  "pyfai>=2023.5.0",
+]

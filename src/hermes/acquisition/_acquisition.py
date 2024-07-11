@@ -1,15 +1,18 @@
 """Classes of Acquisition Functions"""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import tensorflow as tf
+from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 from scipy.special import erf
 
+from hermes.distance import BaseDistance
 
-@dataclass
+@dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Acquisition:
     """Base level class for acquisiton functions"""
 
@@ -17,7 +20,7 @@ class Acquisition:
     mean: np.ndarray
     var: np.ndarray
 
-
+   
 @dataclass
 class Random(Acquisition):
     def calculate(self):
@@ -26,6 +29,19 @@ class Random(Acquisition):
         next_loc = self.unmeasured_locations[next]
         return next_loc
 
+@dataclass
+class FurthestPoint(Acquisition):
+    """Just find the furthest point from the measured locations"""
+    measured_locations: np.ndarray
+    distance_metric: BaseDistance
+
+    def calculate(self):
+        distancetable = self.distance_metric.calculate(self.measured_locations, 
+                                                       self.unmeasured_locations)
+
+        next_loc = self.unmeasured_locations[np.argmax(distance_table.sum(axis=0)),:]
+        return next_loc
+ 
 
 @dataclass
 class PureExploit(Acquisition):
@@ -73,32 +89,6 @@ class ScheduledUpperConfidenceBound(Acquisition):
 
 
 @dataclass
-class ThompsonSampling(Acquisition):
-    full_cov: tf.Tensor
-    batch_size: int
-
-    def calculate(self):
-        # Sum full covariance to get NxN matrix
-        cov = tf.reduce_sum(self.full_cov, axis=0)
-
-        # Define a multivariate normal distribution and take draws from that
-        Y = np.random.multivariate_normal(
-            np.array(self.mean).flatten(), np.array(cov), size=self.batch_size
-        )
-
-        # Find the max point in each draw
-        next_points = []
-        for y in Y:
-            next = np.argmax(y)
-            next_points.append(next)
-
-        next_args = np.array(next_points)
-
-        next_loc = self.unmeasured_locations[next_args]
-        return next_loc
-
-
-@dataclass
 class ProbabilityofImprovement(Acquisition):
     measurements: np.ndarray
 
@@ -135,3 +125,58 @@ class ExpectedImprovement(Acquisition):
 
         next_loc = self.unmeasured_locations[next]
         return next_loc
+
+@dataclass
+class BatchAcquisition(Acquisition):
+    batch_size: int
+
+@dataclass
+class IntrinsicBatch(BatchAcquisition):
+    """These batch acquition methods intrinically allow for more than one point"""
+
+@dataclass
+class ThompsonSampling(IntrinsicBatch):
+    full_cov: tf.Tensor
+
+    def calculate(self):
+        # Sum full covariance to get NxN matrix
+        cov = tf.reduce_sum(self.full_cov, axis=0)
+
+        # Define a multivariate normal distribution and take draws from that
+        Y = np.random.multivariate_normal(
+            np.array(self.mean).flatten(), np.array(cov), size=self.batch_size
+        )
+
+        # Find the max point in each draw
+        next_points = []
+        for y in Y:
+            next = np.argmax(y)
+            next_points.append(next)
+
+        next_args = np.array(next_points)
+
+        next_loc = self.unmeasured_locations[next_args]
+        return next_loc
+
+@dataclass
+class LookAheadBatch(BatchAcquisition):
+    """ These are batch acquisition methods that pretend to measure a the first point, 
+    then look ahead as if that predicted value was the value that was measured, 
+    and update the acquistion landscape and re-acquire"""
+
+
+@dataclass
+class EnsembleBatch(BatchAcquisition):
+    """ These are batch acquisition methods that are an ensemble of servral acquistion methods."""
+
+    acquition_ensemble: list[Acquisition]
+
+    def calculate(self):
+        batch = []
+
+        for acq_method in self.acquition_ensemble:
+            point = acq_method.calculate()
+            batch.append(point)
+
+        batch = np.array(batch)
+        return batch

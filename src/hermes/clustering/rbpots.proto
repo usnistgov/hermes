@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package rbpots;
+
+message IncomingGraphandResolution {
+  string data = 1;  // Use a string to send JSON serialized data
+  double res = 2; // Resolution for clustering
+}
+
+message OutgoingGraphandLabels {
+  repeated int64 labels = 1; // Array of int64 labels
+  string data = 2;  // Use a string to send JSON serialized data
+}
+
+// The service definition
+service Clustering {
+  rpc SendAndModifyGraph (IncomingGraphandResolution) returns (OutgoingGraphandLabels);
+}
+

@@ -18,15 +18,15 @@ warnings.filterwarnings("ignore")  # ignore DeprecationWarnings from tensorflow
 
 logger = logging.getLogger("hermes")
 
-GPC_INSTALLED = False
 try:
     import gpflow
 
     from .heteroscedastic_gpc import HeteroscedasticMultiClass, HeteroscedasticRobustMax
-except ModuleNotFoundError:
-    logger.warning("GPFlow is not installed.")
-else:
+
     GPC_INSTALLED = True
+except ModuleNotFoundError:
+    # logger.warning("GPFlow is not installed.")
+    GPC_INSTALLED = False
 
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
@@ -59,7 +59,7 @@ class Classification(Analysis):
     unmeasured_locations
         Locations in the Domain that have not been measured.
 
-    
+
     Methods
     -------
     return_index(locations)
@@ -106,7 +106,7 @@ class Classification(Analysis):
 
     # The Model
     # model: Optional[Any] = field(init=False, default=None)
-    model: gpflow.models.VGP = field(init=False)
+    model: Any = field(init=False)
 
     # Indexes
     def return_index(self, locations) -> list:
@@ -369,13 +369,13 @@ if GPC_INSTALLED:
     class HeteroscedasticGPC(GPC):
         """A class for GPC's where the training data has known uncertainty.
         Specifically, at every observation there is a probabilistic assignment of the labels.
-        
+
         Attributes
         ----------
         probabilities : np.ndarray
             Membership probabilities of each measurement to each cluster.
             Membership of each measurement must sum to unity (rows sum to 1).
-            Shape is N x C for N measurements and C clusters. 
+            Shape is N x C for N measurements and C clusters.
 
         _from_trained : bool
             Private attribute that indicates whether the model is constructed by loading a pre-trained model.
@@ -383,7 +383,7 @@ if GPC_INSTALLED:
         Methods
         -------
         train(self)
-            Train the GPC. 
+            Train the GPC.
         """
 
         # Probabilistic labeling

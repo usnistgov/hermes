@@ -27,9 +27,9 @@ where <my_token> is your personal access [GitHub Token](https://docs.github.com/
 
 ## goals
 
-- Consistent active learning and modeling interface aimed at enabling nonstandard analysis and acquisition policy? But with batteries included for standard BayesOpt or whatever
-- data acquisition and wrangling with no-work FAIR backend integration
-- Possibly actual ML models and bag of materials/physics tricks lives in separate module?
+- Consistent active learning and modeling interface aimed at enabling nonstandard analysis and acquisition policy. 
+- Data acquisition and wrangling with no-work FAIR backend integration
+- Actual ML models and bag of materials/physics tricks. 
 
 ## Base level tasks
 
