@@ -1,5 +1,7 @@
 # hermes
 
+Hermes is a repository designed to be a modular compilation of tools for machine learning and autonomous experimentation in materials science domains. 
+
 ## Development
 This code base is under active development.
 
