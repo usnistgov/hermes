@@ -267,7 +267,7 @@ class GaussianMixtureModel(Cluster):
     """Treat the density of datapoints as generated from Gaussian Distributions"""
 
     def cluster(self, n_clusters: int, **kwargs):
-        """Gaussian Mixture Model in location space"""
+        """Gaussian Mixture Model in measurement space"""
 
         clusters = GaussianMixture(n_clusters, **kwargs).fit(
             self.measurements
@@ -281,7 +281,7 @@ class BayesianGaussianMixtureModel(Cluster):
     """Treat the density of datapoints as generated from Gaussian Distributions"""
 
     def cluster(self, n_clusters: int, **kwargs):
-        """Gaussian Mixture Model in location space"""
+        """Gaussian Mixture Model in measurement space"""
 
         clusters = BayesianGaussianMixture(n_clusters, **kwargs).fit(
             self.measurements
@@ -514,7 +514,7 @@ class ContiguousCommunityDiscovery(ContiguousCluster):
 class RBPots(ContiguousCommunityDiscovery):
     """RBPots algorithm on the graph formed from the Contiguous parent class.
 
-    Paremeters
+    Parameters
     ----------
     resolution : float
         Parameter that controls how sharp the change in similarity should be to cause a partition.
@@ -592,7 +592,7 @@ class IteritativeFixedK(ContiguousCommunityDiscovery):
     min_K : int
         Smallest number of clusters to consider.
 
-    mak_K : int
+    max_K : int
         Largest number of clusters to consider.
 
     """

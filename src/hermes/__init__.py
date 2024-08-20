@@ -6,24 +6,36 @@
 # For data analysis tasks
 # For comparison measures
 # For archiving results
-from hermes import acquisition, classification, clustering, distance, similarity
-from hermes.bailiwick import PhaseID, SpectralProbability
+from hermes import (acquisition, 
+                    archive, 
+                    classification, 
+                    clustering, 
+                    distance, 
+                    instruments, 
+                    joint, 
+                    latent_space, 
+                    # multitask,
+                    pipelines, 
+                    similarity, 
+                    utils
+                    )
+
 
 __author__ = """Austin McDannald, Brian DeCost, Camilo Velez"""
 __email__ = "camilo.velezramirez@nist.gov"
 __version__ = "0.1.0"
 
 __all__ = [
-    "archive",
-    "distance",
-    "similarity",
-    "clustering",
-    "classification",
     "acquisition",
+    "archive",
+    "classification",
+    "clustering",
+    "distance",
     "instruments",
-    # "joint",
+    "joint",
+    "latent_space",
+    # "multitask",
     "pipelines",
-    "PhaseID",
-    "SpectralProbability",
+    "similarity",
     "utils",
 ]
