@@ -581,35 +581,214 @@ class RBPots(ContiguousCommunityDiscovery):
         # self.labels = np.asarray(G.nodes.data(data="Labels"))[:, 1]
         # self.get_local_membership_prob()
 
-
 @typesafedataclass(config=_Config)
-class IteritativeFixedK(ContiguousCommunityDiscovery):
-    """Call a fixed k clustering method iteratively
-    using the Gap Statisic method to choose K.
-
+class IterativeFixedK(Cluster):
+    """Clustering class that extends clustering classes to find the number of clusters
+    Call a fixed k clustering method iteratively
+    using the Gap Statistic method to choose K.
+    
     Parameters
     ----------
-    min_K : int
-        Smallest number of clusters to consider.
+    clutering_method : Cluster
+        The fixed k clustering method to use
+    
+    ref_distribution : str
+        The type of reference distribution to use for the Gap Statistic
 
-    max_K : int
+    repeats : int
+        How many repeats to perform at each value of k
+
+    k_max : int
         Largest number of clusters to consider.
+
+    Methods
+    -------
+    generate_ref_data(data, distribution = 'uniform', mu = 1.0, sigma = 1.0)
+        Generate reference data to use in the Gap Statistic
+
+    gap_statistic(clustering_method,ref_distribution = "uniform", k_max = 10, repeats = 2)
+        Calculate the Gap Statisic at all values of k up to k_max, performing repeats at each value.
+
+    find_optimal_k(gaps)
+        Use the list of gaps to choose the optimal k
+    
+    cluster(k)
+        Use the Gap Statistic to choose the optimal value of k, then use that to cluster the data
 
     """
 
-    # TODO:  Write Gap_Statistic function
+    cluster_method: Cluster
+    ref_distribution: str
+    repeats: int
+    k_max: int
 
-    # method: ContiguousFixedKClustering
-    min_K: int = 1
-    max_K: int = 10
+
+    def __post_init__(self):
+        #Intialize as the Cluster class
+        super().__post_init__()
+
+        #Add the measurements object to the internal clustering method
+        self.cluster_method.measurements = self.measurements
+    
+    def generate_reference_data(data, distribution = 'uniform', mu = 1.0, sigma = 1.0):
+        if distribution == 'uniform':
+            low = np.min(data)
+            high = np.max(data)
+            ref_data = np.random.uniform(low = low, high = high, size = data.shape)
+
+        elif distribution == 'normal':
+            mu = np.mean(data)
+            sigma = np.std(data)
+            ref_data = np.random.normal(loc = mu, scale = sigma, size = data.shape)
+
+        else:
+            raise ValueError('distribution not implemented yet')
+
+        return ref_data
+
+    def gap_statistic(clustering_method, ref_distribution = "uniform", k_max = 10, repeats = 2):
+        #Extract the data
+        data = clustering_method.measurements
+
+        #initialize the reference clustering method
+        ref_clustering_method = clustering_method.__class__()
+
+        #Find the total scatter within the data
+        total_scatter = np.sum(pairwise_distances(data))/2
+
+        #Container for the gap statisic at each value of k
+        mean_gap_list = [0.0] # for k = 1 gap is definitionally 0.0 
+
+        #Loop over values of k
+        # starting with k = 2 up to k = k_max
+        for k in range(2,k_max):
+        
+            #Container for the gap statisic at each repeat
+            gap_list = []
+
+            #Loop over the repeats
+            for j in range(repeats):
+                #Cluster the data
+                clustering_method.cluster(n_clusters = k)
+                
+                #Generate the reference data
+                test_ref = generate_reference_data(data = data, distribution = ref_distribution)
+                
+                #Find total scatter of reference data
+                total_ref_scatter = np.sum(pairwise_distances(test_ref))/2
+                
+                #set the reference data to the reference clustering method
+                ref_clustering_method.measurements = test_ref
+                
+                #cluster the reference data
+                ref_clustering_method.cluster(n_clusters = k)
+
+                #initialize containers for the within cluster scatter for each cluster
+                scatter_within_clusters = []
+                scatter_within_ref = []
+
+                #loop over each cluster
+                for i in range(k):
+                    #partition of data in that cluster
+                    sub_data = data[clustering_method.labels == i]
+                    sub_ref = test_ref[ref_clustering_method.labels == i]
+                    
+                    #compute the within cluster scatter
+                    cluster_scatter = np.sum(pairwise_distances(sub_data))/2
+                    ref_scatter = np.sum(pairwise_distances(sub_ref))/2
+
+                    #append withing cluster scatter for that cluster to the container
+                    scatter_within_clusters.append(cluster_scatter)
+                    scatter_within_ref.append(ref_scatter)
+
+                #sum within cluster scatter over each cluster
+                within_cluster_scatter = np.sum(scatter_within_clusters)
+                within_ref_scatter = np.sum(scatter_within_ref)
+
+                #Compare within cluster scatter to total scatter
+                log_scatter = np.log(within_cluster_scatter) - np.log(total_scatter)
+                log_ref_scatter = np.log(within_ref_scatter) - np.log(total_ref_scatter)
+
+                #compute the gap statistic
+                gap = log_ref_scatter - log_scatter
+                #append gap to container for that repeat  
+                gap_list.append(gap)
+
+            #average gap for that value of k
+            mean_gap = np.mean(gap_list)
+            #append that mean gap to container for all values of k
+            mean_gap_list.append(mean_gap)
+
+        return mean_gap_list
+
+    def find_optimal_k(gaps):
+        #compute the difference between gap at k and gap at k-1
+        gap_difference = gaps - np.roll(gaps,1)  
+        #cut off the value for when k = 1 (which was compared to k = k_max)
+        gap_difference = gap_difference[1:]
+        
+        #test for monotonic increase:
+        mono = np.all(gap_difference >= 0)
+        if mono:
+            arg_in_gap_difference = len(gap_difference) - 1
+        else:
+            #find the first arg where the gap decreased from the previous
+            arg_in_gap_difference = np.min(np.argwhere(gap_difference < 0))
+            #We want the arg befor the gap decreased
+            arg_in_gap_difference -= 1
+
+        #Add 1 since gap_difference has 1 less arg than gaps
+        arg_in_gaps = arg_in_gap_difference + 1
+
+        #Add 1 since gaps[0] is when k=1
+        optimal_k = arg_in_gaps + 1
+
+        return optimal_k
 
     def cluster(self):
-        """Cluster the graph using gap statistic."""
-        G = self.graph
-        K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
-        # TODO: define gap_statistic
-        labels = self.method(K)
-        self.get_local_membership_prob()
+        gap_list = self.gap_statistic(self.cluster_method,
+                                      self.ref_distribution,
+                                      self.k_max,
+                                      self.repeats)
+
+        self.gap_list = gap_list
+
+        optimal_k = self.find_optimal_k(self.gap_list)
+
+        labels = self.cluster_method.cluster(n_clusters = self.optimal_k)
+
+        self.labels = labels
+
+
+
+# @typesafedataclass(config=_Config)
+# class IteritativeFixedK(ContiguousCommunityDiscovery):
+#     """Call a fixed k clustering method iteratively
+#     using the Gap Statisic method to choose K.
+
+#     Parameters
+#     ----------
+#     min_K : int
+#         Smallest number of clusters to consider.
+
+#     max_K : int
+#         Largest number of clusters to consider.
+
+#     """
+
+#     # TODO:  Write Gap_Statistic function
+
+#     # method: ContiguousFixedKClustering
+#     min_K: int = 1
+#     max_K: int = 10
+
+#     def cluster(self):
+#         """Cluster the graph using gap statistic."""
+#         G = self.graph
+#         K = Gap_Statistic(G, self.method, self.min_K, self.max_K)
+#         # TODO: define gap_statistic
+#         labels = self.method(K)
+#         self.get_local_membership_prob()
 
 
 #     @classmethod
