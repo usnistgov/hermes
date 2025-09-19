@@ -438,8 +438,9 @@ jax==0.4.10 ; python_version >= "3.8" and python_version < "3.11" \
 joblib==1.2.0 ; python_version >= "3.8" and python_version < "3.11" \
     --hash=sha256:091138ed78f800342968c523bdde947e7a305b8594b910a0fea2ab83c3c6d385 \
     --hash=sha256:e1cee4a79e4af22881164f218d4311f60074197fb707e082e803b61f6d137018
-keras==2.12.0 ; python_version >= "3.8" and python_version < "3.11" \
-    --hash=sha256:35c39534011e909645fb93515452e98e1a0ce23727b55d4918b9c58b2308c15e
+keras==3.11.0 ; python_version >= "3.8" and python_version < "3.11" \
+    --hash=sha256:28babe8dc69370a2b7c3bc385be6c1f22d702b00b3c47cae62559b6f80d6073a \
+    --hash=sha256:f5dfeaf4fcaea180e032f7c1e373f1868961e2940dcfcaaf9a5b711baf41bd60
 kiwisolver==1.4.4 ; python_version >= "3.8" and python_version < "3.11" \
     --hash=sha256:02f79693ec433cb4b5f51694e8477ae83b3205768a6fb48ffba60549080e295b \
     --hash=sha256:03baab2d6b4a54ddbb43bba1a3a2d1627e82d205c5cf8f4c924dc49284b87166 \
