@@ -1198,9 +1198,9 @@ typing-extensions==4.6.2 ; python_version >= "3.8" and python_version < "3.11" \
 urllib3==1.26.16 ; python_version >= "3.8" and python_version < "3.11" \
     --hash=sha256:8d36afa7616d8ab714608411b4a3b13e58f463aee519024578e062e141dce20f \
     --hash=sha256:8f135f6502756bde6b2a9b28989df5fbe87c9970cecaa69041edcce7f0589b14
-werkzeug==2.3.4 ; python_version >= "3.8" and python_version < "3.11" \
-    --hash=sha256:1d5a58e0377d1fe39d061a5de4469e414e78ccb1e1e59c0f5ad6fa1c36c52b76 \
-    --hash=sha256:48e5e61472fee0ddee27ebad085614ebedb7af41e88f687aaf881afb723a162f
+werkzeug==3.1.4 ; python_version >= "3.8" and python_version < "3.11" \
+    --hash=sha256:2ad50fb9ed09cc3af22c54698351027ace879a0b60a3b5edf5730b2f7d876905 \
+    --hash=sha256:cd3cd98b1b92dc3b7b3995038826c68097dcb16f9baa63abe35f20eafeb9fe5e
 wheel==0.40.0 ; python_version >= "3.8" and python_version < "3.11" \
     --hash=sha256:cd1196f3faee2b31968d626e1731c94f99cbdb67cf5a46e4f5656cbee7738873 \
     --hash=sha256:d236b20e7cb522daf2390fa84c55eea81c5c30190f90f29ae2ca1ad8355bf247
